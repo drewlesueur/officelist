@@ -32,7 +32,8 @@
     $("#location").val(listing.location);
     $("#size").val(listing.size);
     $("#price").val(listing.price);
-    return $("#desc").val(listing.desc);
+    $("#desc").val(listing.desc);
+    return (window.listing = listing);
   };
   server = function(method, args, func) {
     return Severus.ajax({
@@ -75,7 +76,6 @@
     },
     save: function(listing, callback) {
       var old_bubble;
-      console.log("test save");
       if (listing.bubble) {
         old_bubble = listing.bubble;
         delete listing.bubble;
@@ -118,7 +118,7 @@
       main: function() {
         var add_listing, map_div;
         map_div = render.google_map();
-        add_listing = html.add_listing(listing);
+        add_listing = html.add_listing();
         return body.append(add_listing);
       },
       google_map: function() {
@@ -183,6 +183,7 @@
         };
         handle_marker_click = function() {
           bubble_open();
+          console.log(my_listing);
           return my_listing._user === username ? set_current_listing(my_listing) : null;
         };
         google.maps.event.addListener(marker, "click", handle_marker_click);
@@ -205,7 +206,7 @@
       button: function() {
         return $('<input type="button" />');
       },
-      add_listing: function(my_listing) {
+      add_listing: function() {
         var listing_div, save_listing_button;
         listing_div = add_listing_form();
         save_listing_button = listing_div.find("#save_listing");
@@ -215,7 +216,7 @@
             var updater;
             updater = {};
             updater[$(this).attr("id")] = $(this).val();
-            return set(my_listing, updater);
+            return set(listing, updater);
           }
         });
         listing_div.find("input[type='text'], textarea").keyup(function(e) {
@@ -223,17 +224,16 @@
           if ($(this).attr("id") !== "location") {
             updater = {};
             updater[$(this).attr("id")] = $(this).val();
-            return set(my_listing, updater);
+            return set(listing, updater);
           }
         });
         save_listing_button.click(function() {
           var location, price;
           location = $(".add.location").val();
           price = $(".add.location").val();
-          return Listing.save(my_listing, function(ret) {
-            console.log(ret);
-            my_listing._id = ret;
-            return my_listing.bubble.close();
+          return Listing.save(listing, function(ret) {
+            listing._id = ret;
+            return listing.bubble.close();
           });
         });
         return listing_div;
