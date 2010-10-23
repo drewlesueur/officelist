@@ -199,8 +199,9 @@
           var location, price;
           location = $(".add.location").val();
           price = $(".add.location").val();
-          return Listing.save(listing, function() {
-            return console.log("saved");
+          return Listing.save(listing, function(ret) {
+            console.log(ret);
+            return (listing._id = ret);
           });
         });
         return listing_div;

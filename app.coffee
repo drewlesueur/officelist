@@ -183,8 +183,9 @@ $(window).load () ->
       save_listing_button.click () ->
         location = $(".add.location").val()
         price = $(".add.location").val()
-        Listing.save listing, () ->
-          console.log "saved"
+        Listing.save listing, (ret) ->
+          console.log ret
+          listing._id = ret
       return listing_div
     
     add_listing_form: add_listing_form = () ->
