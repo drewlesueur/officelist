@@ -1,9 +1,12 @@
 (function() {
-  var Listing, body, get_location, listing, listings, map, set;
+  var Listing, adding_markers, body, bubbles, get_location, listing, listings, map, render, set;
   map = "";
   body = $("body");
   window.map = map;
   window.body = body;
+  render = "";
+  adding_markers = [];
+  bubbles = [];
   get_location = function(wherethe, callback) {
     var geocoder;
     geocoder = new google.maps.Geocoder();
@@ -39,7 +42,7 @@
           loc = get_location(v, function(loc) {
             listing.lat = loc.lat();
             listing.lng = loc.lng();
-            add_google_map_marker(listing);
+            render.add_google_map_marker(listing);
             return map.setCenter(loc);
           });
         }
@@ -50,14 +53,13 @@
       console.log("test save");
       if (listing.bubble) {
         delete listing.bubble;
-        delete listing.is_new;
+        return delete listing.is_new;
       }
-      return server.addedit(listing, callback);
     }
   };
   window.Listing = Listing;
   $(window).load(function() {
-    var add_listing_form, go, html, render;
+    var add_listing_form, go, html;
     go = function() {
       Severus.ajax({
         type: "GET",
@@ -88,7 +90,6 @@
           left: 300,
           top: 0
         });
-        console.log(div_map);
         body.append(div_map);
         latlng = new google.maps.LatLng(33.4222685, -111.8226402);
         myOptions = {
@@ -97,6 +98,15 @@
           mapTypeId: google.maps.MapTypeId.ROADMAP
         };
         return (map = new google.maps.Map(document.getElementById("map"), myOptions));
+      },
+      remove_adding_markers: function() {
+        var _a, _b, _c, _d, i;
+        _a = []; _c = adding_markers;
+        for (_b = 0, _d = _c.length; _b < _d; _b++) {
+          i = _c[_b];
+          _a.push(i.setMap(null));
+        }
+        return _a;
       },
       add_google_map_marker: function(listing, callback) {
         var bubble_open, loc, marker, marker_options;
@@ -111,7 +121,7 @@
         }
         marker = new google.maps.Marker(marker_options);
         if (listing.is_new === true) {
-          remove_adding_markers();
+          render.remove_adding_markers();
           adding_markers.push(marker);
         }
         bubble_open = function() {
@@ -163,17 +173,27 @@
             return set(listing, updater);
           }
         });
-        return listing_div.find("input[type='text'], textarea").keyup(function(e) {
+        listing_div.find("input[type='text'], textarea").keyup(function(e) {
           var updater;
+          console.log("yea");
           if ($(this).attr("id") !== "location") {
             updater = {};
             updater[$(this).attr("id")] = $(this).val();
             return set(listing, updater);
           }
         });
+        save_listing_button.click(function() {
+          var location, price;
+          location = $(".add.location").val();
+          price = $(".add.location").val();
+          return Listing.save(listing, function() {
+            return console.log("saved");
+          });
+        });
+        return listing_div;
       },
       add_listing_form: (add_listing_form = function() {
-        return $("<pre>\n<select id=\"for_lease\">\n  <option>For Lease</option>\n  <option>For Purchase</option>\n</select>\nLocation\n<input id=\"location\">\nSize\n<input id=\"size\">\nPrice\n<input id=\"price\">\nDescription\n<textarea id=\"desc\"></textarea>\n<select id=\"built_out\">\n  <option>Built out</option>\n  <option>Not built out</option>\n</select>\nYoutube Video\n<input id=\"youtube\" />\n<a href=\"#\">Add another youtube video</a>\n<input type=\"button\" id=\"save_listing\" value=\"Save\"/>\n</pre>");
+        return $("<pre>\n<select id=\"for_lease\">\n  <option>For Lease</option>\n  <option>For Purchase</option>\n</select>\nLocation\n<input id=\"location\" type=\"text\">\nSize\n<input id=\"size\" type=\"text\">\nPrice\n<input id=\"price\" type=\"text\">\nDescription\n<textarea id=\"desc\"></textarea>\n<select id=\"built_out\">\n  <option>Built out</option>\n  <option>Not built out</option>\n</select>\nYoutube Video\n<input id=\"youtube\" />\n<a href=\"#\">Add another youtube video</a>\n<input type=\"button\" id=\"save_listing\" value=\"Save\"/>\n</pre>");
       })
     });
   });

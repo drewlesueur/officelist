@@ -49,5 +49,8 @@ _.mixin({
   ,"time": function time() {
     return (new Date()).getTime()
   }
+  ,capitalize : function(str) {
+    return str.charAt(0).toUpperCase() + str.substring(1).toLowerCase();
+  }
 
 })

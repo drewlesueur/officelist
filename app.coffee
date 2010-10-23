@@ -2,8 +2,9 @@ map = ""
 body = $ "body"
 window.map = map
 window.body = body
-
-
+render = ""
+adding_markers = []
+bubbles = []
 get_location = (wherethe, callback) ->
   geocoder = new google.maps.Geocoder()
   geocoder.geocode address: wherethe, (results, status) ->
@@ -41,7 +42,7 @@ Listing =
         loc = get_location v, (loc) ->
           listing.lat = loc.lat()
           listing.lng = loc.lng()
-          add_google_map_marker listing
+          render.add_google_map_marker listing
           map.setCenter loc
       if listing.bubble && listing.bubble.view
         $(".bubble.#{k}").text v
@@ -51,7 +52,7 @@ Listing =
     if listing.bubble
       delete listing.bubble
       delete listing.is_new
-    server.addedit listing, callback
+    #server.addedit listing, callback
 
 window.Listing = Listing
 
@@ -74,6 +75,7 @@ $(window).load () ->
     main: () ->
       map_div = render.google_map()
       add_listing = html.add_listing(listing)
+      
       body.append add_listing
       
     google_map: () ->
@@ -83,9 +85,6 @@ $(window).load () ->
         position: 'absolute'
         left: 300
         top: 0
-      
-      console.log div_map
-      
       body.append div_map
       
       latlng = new google.maps.LatLng(33.4222685, -111.8226402)
@@ -96,7 +95,10 @@ $(window).load () ->
       };
       map = new google.maps.Map(document.getElementById("map"),myOptions)
     
-    
+    remove_adding_markers: () ->
+      for i in adding_markers
+        i.setMap null 
+
     add_google_map_marker: (listing, callback) ->
       loc = new google.maps.LatLng listing.lat, listing.lng
       marker_options = 
@@ -109,7 +111,7 @@ $(window).load () ->
       marker = new google.maps.Marker marker_options
        
       if listing.is_new is true
-        remove_adding_markers()
+        render.remove_adding_markers()
         adding_markers.push marker
         
       bubble_open = () ->
@@ -160,10 +162,18 @@ $(window).load () ->
           updater[$(this).attr("id")] = $(this).val()
           set listing, updater
       listing_div.find("input[type='text'], textarea").keyup (e) ->
+        console.log "yea"
         if $(this).attr("id") != "location"
           updater = {}
           updater[$(this).attr("id")] = $(this).val()
           set listing, updater
+          
+      save_listing_button.click () ->
+        location = $(".add.location").val()
+        price = $(".add.location").val()
+        Listing.save listing, () ->
+          console.log "saved"
+      return listing_div
     
     add_listing_form: add_listing_form = () ->
       $("""
@@ -173,11 +183,11 @@ $(window).load () ->
         <option>For Purchase</option>
       </select>
       Location
-      <input id="location">
+      <input id="location" type="text">
       Size
-      <input id="size">
+      <input id="size" type="text">
       Price
-      <input id="price">
+      <input id="price" type="text">
       Description
       <textarea id="desc"></textarea>
       <select id="built_out">
