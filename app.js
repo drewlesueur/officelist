@@ -59,7 +59,7 @@
   $(window).load(function() {
     var add_listing_form, go, html, render;
     go = function() {
-      return Severus.ajax({
+      Severus.ajax({
         type: "GET",
         url: "json",
         success: function(data) {
@@ -69,6 +69,7 @@
           return console.log("error");
         }
       });
+      return render.main();
     };
     Severus.initialize("http://localhost:86/severus.html", go);
     render = {
@@ -80,14 +81,14 @@
       },
       google_map: function() {
         var div_map, latlng, myOptions;
-        div_map = html.div().attr("id", "map").css;
-        ({
+        div_map = html.div().attr("id", "map").css({
           width: 800,
           height: 500,
           position: 'absolute',
           left: 300,
           top: 0
         });
+        console.log(div_map);
         body.append(div_map);
         latlng = new google.maps.LatLng(33.4222685, -111.8226402);
         myOptions = {

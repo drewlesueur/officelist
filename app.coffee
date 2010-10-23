@@ -65,7 +65,7 @@ $(window).load () ->
       error: (data) ->
         console.log "error"
     
-    #render.main()
+    render.main()
         
    
   Severus.initialize("http://localhost:86/severus.html", go)
@@ -78,13 +78,16 @@ $(window).load () ->
       
     google_map: () ->
       div_map = html.div().attr("id", "map").css
-      width: 800
-      height: 500
-      position: 'absolute'
-      left: 300
-      top: 0
+        width: 800
+        height: 500
+        position: 'absolute'
+        left: 300
+        top: 0
+      
+      console.log div_map
       
       body.append div_map
+      
       latlng = new google.maps.LatLng(33.4222685, -111.8226402)
       myOptions = {
         zoom: 11,
