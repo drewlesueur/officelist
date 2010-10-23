@@ -26,7 +26,13 @@ listing =  # the listing you are adding
   
 window.listing = listing
 
-
+set_current_listing = (my_listing) ->
+  listing = my_listing
+  $("#location").val listing.location
+  $("#size").val listing.size
+  $("#price").val listing.price
+  $("#desc").val listing.desc
+  
 server = (method, args, func) ->
   Severus.ajax
     type: "POST",
@@ -35,6 +41,9 @@ server = (method, args, func) ->
     success: (data) ->
       func and func data
 
+server.get_all_listings = (callback) ->
+  server "find", {"_type": "listing"}, callback
+
 set = (obj, vals) ->
   _.extend obj, vals
   type = _.capitalize obj._type
@@ -42,6 +51,9 @@ set = (obj, vals) ->
     window[type].set obj, vals
   else
     console.log obj, type, window[type]
+
+
+
 
 Listing = 
   set: (listing, vals) ->
@@ -59,25 +71,31 @@ Listing =
   save: (listing, callback) ->
     console.log "test save"
     if listing.bubble
+      old_bubble = listing.bubble
       delete listing.bubble
       delete listing.is_new
     #server "update", {va: listing, wh: {id: listing._id}, "upsert" : true }, callback
-    server "addedit", listing, callback
+    server "addedit", listing, () ->
+      listing.bubble = old_bubble
+      callback()
   
 window.Listing = Listing
 
 $(window).load () ->
   go = () ->
     listing._user = username
+    server.get_all_listings (listings) ->
+      for listing in listings
+        render.add_google_map_marker listing
+      
     Severus.ajax
       type: "GET",
       url: "json"
       success: (data) ->
         console.log data
-        
       error: (data) ->
         console.log "error"
-        
+       
     
     render.main()
         
@@ -112,28 +130,30 @@ $(window).load () ->
       for i in adding_markers
         i.setMap null 
 
-    add_google_map_marker: (listing, callback) ->
-      loc = new google.maps.LatLng listing.lat, listing.lng
+    add_google_map_marker: (my_listing, callback) ->
+      loc = new google.maps.LatLng my_listing.lat, my_listing.lng
       marker_options = 
         position: loc
         map: map
         title: "hello world"
+        
       
-      if listing._user is username
+      if my_listing._user is username
         marker_options.draggable = true
+        marker_options.icon = "apartment.png"
       marker = new google.maps.Marker marker_options
        
-      if listing.is_new is true
+      if my_listing.is_new is true
         render.remove_adding_markers()
         adding_markers.push marker
-        
+      
       bubble_open = () ->
         info = """
         <pre>
-        <span class="bubble location">#{listing.location}</span>
-        <span class="bubble size">#{listing.size}</span>
-        <span class="bubble price">#{listing.price}</span>
-        <span class="bubble desc">#{listing.desc}</span>
+        <span class="bubble location">#{my_listing.location}</span>
+        <span class="bubble size">#{my_listing.size}</span>
+        <span class="bubble price">#{my_listing.price}</span>
+        <span class="bubble desc">#{my_listing.desc}</span>
         </pre>
         """
         bubble = new google.maps.InfoWindow
@@ -143,10 +163,15 @@ $(window).load () ->
         blubbles = []
         bubbles.push bubble
         bubble.open map, marker
-        listing.bubble = bubble
+        my_listing.bubble = bubble
         
-      google.maps.event.addListener marker, "click", bubble_open   
-      if listing.is_new is true
+      handle_marker_click = () ->
+        bubble_open()
+        if my_listing._user is username
+          set_current_listing my_listing
+        
+      google.maps.event.addListener marker, "click", handle_marker_click   
+      if my_listing.is_new is true
         bubble_open()
 
     
@@ -164,7 +189,7 @@ $(window).load () ->
     button: () ->
       $('<input type="button" />')
     
-    add_listing: (listing) ->
+    add_listing: (my_listing) ->
       listing_div = add_listing_form()
       save_listing_button =listing_div.find "#save_listing"
       
@@ -173,19 +198,20 @@ $(window).load () ->
         callback: (text) ->
           updater = {}
           updater[$(this).attr("id")] = $(this).val()
-          set listing, updater
+          set my_listing, updater
       listing_div.find("input[type='text'], textarea").keyup (e) ->
         if $(this).attr("id") != "location"
           updater = {}
           updater[$(this).attr("id")] = $(this).val()
-          set listing, updater
+          set my_listing, updater
           
       save_listing_button.click () ->
         location = $(".add.location").val()
         price = $(".add.location").val()
-        Listing.save listing, (ret) ->
+        Listing.save my_listing, (ret) ->
           console.log ret
-          listing._id = ret
+          my_listing._id = ret
+          my_listing.bubble.close()
       return listing_div
     
     add_listing_form: add_listing_form = () ->

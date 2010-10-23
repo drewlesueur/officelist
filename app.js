@@ -1,5 +1,5 @@
 (function() {
-  var Listing, adding_markers, body, bubbles, get_location, listing, listings, map, render, server, set;
+  var Listing, adding_markers, body, bubbles, get_location, listing, listings, map, render, server, set, set_current_listing;
   map = "";
   body = $("body");
   window.map = map;
@@ -27,6 +27,13 @@
     _type: "listing"
   };
   window.listing = listing;
+  set_current_listing = function(my_listing) {
+    listing = my_listing;
+    $("#location").val(listing.location);
+    $("#size").val(listing.size);
+    $("#price").val(listing.price);
+    return $("#desc").val(listing.desc);
+  };
   server = function(method, args, func) {
     return Severus.ajax({
       type: "POST",
@@ -38,6 +45,11 @@
         return func && func(data);
       }
     });
+  };
+  server.get_all_listings = function(callback) {
+    return server("find", {
+      "_type": "listing"
+    }, callback);
   };
   set = function(obj, vals) {
     var _a, type;
@@ -62,12 +74,17 @@
       });
     },
     save: function(listing, callback) {
+      var old_bubble;
       console.log("test save");
       if (listing.bubble) {
+        old_bubble = listing.bubble;
         delete listing.bubble;
         delete listing.is_new;
       }
-      return server("addedit", listing, callback);
+      return server("addedit", listing, function() {
+        listing.bubble = old_bubble;
+        return callback();
+      });
     }
   };
   window.Listing = Listing;
@@ -75,6 +92,15 @@
     var add_listing_form, go, html;
     go = function() {
       listing._user = username;
+      server.get_all_listings(function(listings) {
+        var _a, _b, _c, _d;
+        _a = []; _c = listings;
+        for (_b = 0, _d = _c.length; _b < _d; _b++) {
+          listing = _c[_b];
+          _a.push(render.add_google_map_marker(listing));
+        }
+        return _a;
+      });
       Severus.ajax({
         type: "GET",
         url: "json",
@@ -122,25 +148,26 @@
         }
         return _a;
       },
-      add_google_map_marker: function(listing, callback) {
-        var bubble_open, loc, marker, marker_options;
-        loc = new google.maps.LatLng(listing.lat, listing.lng);
+      add_google_map_marker: function(my_listing, callback) {
+        var bubble_open, handle_marker_click, loc, marker, marker_options;
+        loc = new google.maps.LatLng(my_listing.lat, my_listing.lng);
         marker_options = {
           position: loc,
           map: map,
           title: "hello world"
         };
-        if (listing._user === username) {
+        if (my_listing._user === username) {
           marker_options.draggable = true;
+          marker_options.icon = "apartment.png";
         }
         marker = new google.maps.Marker(marker_options);
-        if (listing.is_new === true) {
+        if (my_listing.is_new === true) {
           render.remove_adding_markers();
           adding_markers.push(marker);
         }
         bubble_open = function() {
           var _a, _b, _c, blubbles, bubble, bubbly, info;
-          info = ("<pre>\n<span class=\"bubble location\">" + (listing.location) + "</span>\n<span class=\"bubble size\">" + (listing.size) + "</span>\n<span class=\"bubble price\">" + (listing.price) + "</span>\n<span class=\"bubble desc\">" + (listing.desc) + "</span>\n</pre>");
+          info = ("<pre>\n<span class=\"bubble location\">" + (my_listing.location) + "</span>\n<span class=\"bubble size\">" + (my_listing.size) + "</span>\n<span class=\"bubble price\">" + (my_listing.price) + "</span>\n<span class=\"bubble desc\">" + (my_listing.desc) + "</span>\n</pre>");
           bubble = new google.maps.InfoWindow({
             content: info
           });
@@ -152,10 +179,14 @@
           blubbles = [];
           bubbles.push(bubble);
           bubble.open(map, marker);
-          return (listing.bubble = bubble);
+          return (my_listing.bubble = bubble);
         };
-        google.maps.event.addListener(marker, "click", bubble_open);
-        return listing.is_new === true ? bubble_open() : null;
+        handle_marker_click = function() {
+          bubble_open();
+          return my_listing._user === username ? set_current_listing(my_listing) : null;
+        };
+        google.maps.event.addListener(marker, "click", handle_marker_click);
+        return my_listing.is_new === true ? bubble_open() : null;
       }
     };
     return (html = {
@@ -174,7 +205,7 @@
       button: function() {
         return $('<input type="button" />');
       },
-      add_listing: function(listing) {
+      add_listing: function(my_listing) {
         var listing_div, save_listing_button;
         listing_div = add_listing_form();
         save_listing_button = listing_div.find("#save_listing");
@@ -184,7 +215,7 @@
             var updater;
             updater = {};
             updater[$(this).attr("id")] = $(this).val();
-            return set(listing, updater);
+            return set(my_listing, updater);
           }
         });
         listing_div.find("input[type='text'], textarea").keyup(function(e) {
@@ -192,16 +223,17 @@
           if ($(this).attr("id") !== "location") {
             updater = {};
             updater[$(this).attr("id")] = $(this).val();
-            return set(listing, updater);
+            return set(my_listing, updater);
           }
         });
         save_listing_button.click(function() {
           var location, price;
           location = $(".add.location").val();
           price = $(".add.location").val();
-          return Listing.save(listing, function(ret) {
+          return Listing.save(my_listing, function(ret) {
             console.log(ret);
-            return (listing._id = ret);
+            my_listing._id = ret;
+            return my_listing.bubble.close();
           });
         });
         return listing_div;
