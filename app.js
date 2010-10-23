@@ -1,5 +1,5 @@
 (function() {
-  var Listing, adding_markers, body, bubbles, get_location, listing, listings, map, render, set;
+  var Listing, adding_markers, body, bubbles, get_location, listing, listings, map, render, server, set;
   map = "";
   body = $("body");
   window.map = map;
@@ -27,6 +27,18 @@
     _type: "listing"
   };
   window.listing = listing;
+  server = function(method, args, func) {
+    return Severus.ajax({
+      type: "POST",
+      url: ("/" + (method)),
+      data: {
+        "q": JSON.stringify(args)
+      },
+      success: function(data) {
+        return func && func(data);
+      }
+    });
+  };
   set = function(obj, vals) {
     var _a, type;
     _.extend(obj, vals);
@@ -53,14 +65,16 @@
       console.log("test save");
       if (listing.bubble) {
         delete listing.bubble;
-        return delete listing.is_new;
+        delete listing.is_new;
       }
+      return server("addedit", listing, callback);
     }
   };
   window.Listing = Listing;
   $(window).load(function() {
     var add_listing_form, go, html;
     go = function() {
+      listing._user = username;
       Severus.ajax({
         type: "GET",
         url: "json",
@@ -175,7 +189,6 @@
         });
         listing_div.find("input[type='text'], textarea").keyup(function(e) {
           var updater;
-          console.log("yea");
           if ($(this).attr("id") !== "location") {
             updater = {};
             updater[$(this).attr("id")] = $(this).val();

@@ -26,6 +26,15 @@ listing =  # the listing you are adding
   
 window.listing = listing
 
+
+server = (method, args, func) ->
+  Severus.ajax
+    type: "POST",
+    url : "/#{method}"
+    data: {"q": JSON.stringify(args)}
+    success: (data) ->
+      func and func data
+
 set = (obj, vals) ->
   _.extend obj, vals
   type = _.capitalize obj._type
@@ -52,19 +61,23 @@ Listing =
     if listing.bubble
       delete listing.bubble
       delete listing.is_new
-    #server.addedit listing, callback
-
+    #server "update", {va: listing, wh: {id: listing._id}, "upsert" : true }, callback
+    server "addedit", listing, callback
+  
 window.Listing = Listing
 
 $(window).load () ->
   go = () ->
+    listing._user = username
     Severus.ajax
       type: "GET",
       url: "json"
       success: (data) ->
         console.log data
+        
       error: (data) ->
         console.log "error"
+        
     
     render.main()
         
@@ -162,7 +175,6 @@ $(window).load () ->
           updater[$(this).attr("id")] = $(this).val()
           set listing, updater
       listing_div.find("input[type='text'], textarea").keyup (e) ->
-        console.log "yea"
         if $(this).attr("id") != "location"
           updater = {}
           updater[$(this).attr("id")] = $(this).val()
