@@ -34,16 +34,7 @@ set_current_listing = (my_listing) ->
   $("#desc").val listing.desc
   window.listing = listing
   
-server = (method, args, func) ->
-  Severus.ajax
-    type: "POST",
-    url : "/#{method}"
-    data: {"q": JSON.stringify(args)}
-    success: (data) ->
-      func and func data
-
-server.get_all_listings = (callback) ->
-  server "find", {"_type": "listing"}, callback
+server = ""
 
 set = (obj, vals) ->
   _.extend obj, vals
@@ -101,8 +92,14 @@ $(window).load () ->
     render.main()
         
    
-  Severus.initialize("http://localhost:86/severus.html", go)
+  #Severus.initialize("http://localhost:86/severus.html", go)
+  Severus.initialize("http://severus.the.tl/severus.html", go)
+  #Severus.initialize("http://apidoc.the.tl", go)
+  server = Severus.server
   
+  server.get_all_listings = (callback) ->
+    server "find", {"_type": "listing"}, callback
+
   render =
     main: () ->
       map_div = render.google_map()

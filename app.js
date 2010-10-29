@@ -35,23 +35,7 @@
     $("#desc").val(listing.desc);
     return (window.listing = listing);
   };
-  server = function(method, args, func) {
-    return Severus.ajax({
-      type: "POST",
-      url: ("/" + (method)),
-      data: {
-        "q": JSON.stringify(args)
-      },
-      success: function(data) {
-        return func && func(data);
-      }
-    });
-  };
-  server.get_all_listings = function(callback) {
-    return server("find", {
-      "_type": "listing"
-    }, callback);
-  };
+  server = "";
   set = function(obj, vals) {
     var _a, type;
     _.extend(obj, vals);
@@ -113,7 +97,13 @@
       });
       return render.main();
     };
-    Severus.initialize("http://localhost:86/severus.html", go);
+    Severus.initialize("http://severus.the.tl/severus.html", go);
+    server = Severus.server;
+    server.get_all_listings = function(callback) {
+      return server("find", {
+        "_type": "listing"
+      }, callback);
+    };
     render = {
       main: function() {
         var add_listing, map_div;
