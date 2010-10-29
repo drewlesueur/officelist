@@ -83,7 +83,8 @@ window.Listing = Listing
 
 $(window).load () ->
   go = () ->
-    listing._user = username
+    window.username = "fix thiss"
+    #listing._user = username or "what"
     server.get_all_listings (listings) ->
       for listing in listings
         render.add_google_map_marker listing
@@ -108,6 +109,11 @@ $(window).load () ->
       add_listing = html.add_listing()
       
       body.append add_listing
+      body.append $ """
+      <!--<a href="javascript:$('iframe').attr('src','http://severus.the.tl/auth/twitter');void(0);">Login with Twitter</a>-->
+      
+      <a href="javascript:Severus.login()">Login with facebook</a>
+      """
       
     google_map: () ->
       div_map = html.div().attr("id", "map").css

@@ -91,7 +91,7 @@
   $(window).load(function() {
     var add_listing_form, go, html;
     go = function() {
-      listing._user = username;
+      window.username = "fix thiss";
       server.get_all_listings(function(listings) {
         var _a, _b, _c, _d;
         _a = []; _c = listings;
@@ -119,7 +119,8 @@
         var add_listing, map_div;
         map_div = render.google_map();
         add_listing = html.add_listing();
-        return body.append(add_listing);
+        body.append(add_listing);
+        return body.append($("<!--<a href=\"javascript:$('iframe').attr('src','http://severus.the.tl/auth/twitter');void(0);\">Login with Twitter</a>-->\n\n<a href=\"javascript:Severus.login()\">Login with facebook</a>"));
       },
       google_map: function() {
         var div_map, latlng, myOptions;
