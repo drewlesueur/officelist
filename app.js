@@ -77,11 +77,11 @@
     go = function() {
       window.username = "fix thiss";
       server.get_all_listings(function(listings) {
-        var _a, _b, _c, _d;
+        var _a, _b, _c, _d, the_listing;
         _a = []; _c = listings;
         for (_b = 0, _d = _c.length; _b < _d; _b++) {
-          listing = _c[_b];
-          _a.push(render.add_google_map_marker(listing));
+          the_listing = _c[_b];
+          _a.push(render.add_google_map_marker(the_listing));
         }
         return _a;
       });
@@ -145,7 +145,8 @@
         marker_options = {
           position: loc,
           map: map,
-          title: "hello world"
+          title: "hello world",
+          icon: "pin.png"
         };
         if (my_listing._user === username) {
           marker_options.draggable = true;

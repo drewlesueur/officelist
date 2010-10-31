@@ -77,8 +77,8 @@ $(window).load () ->
     window.username = "fix thiss"
     #listing._user = username or "what"
     server.get_all_listings (listings) ->
-      for listing in listings
-        render.add_google_map_marker listing
+      for the_listing in listings
+        render.add_google_map_marker the_listing
       
     Severus.ajax
       type: "GET",
@@ -139,7 +139,7 @@ $(window).load () ->
         position: loc
         map: map
         title: "hello world"
-        
+        icon: "pin.png"
       
       if my_listing._user is username
         marker_options.draggable = true
