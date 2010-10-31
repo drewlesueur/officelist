@@ -25,6 +25,10 @@ listing =  # the listing you are adding
   _type: "listing"
   
 window.listing = listing
+set_username = (username1) ->
+  console.log "trying to set username"
+  window.username = username1
+  render.login()
 
 set_current_listing = (my_listing) ->
   listing = my_listing
@@ -74,7 +78,9 @@ window.Listing = Listing
 
 $(window).load () ->
   go = () ->
-    window.username = "fix thiss"
+    window.username = ""
+    
+    
     #listing._user = username or "what"
     server.get_all_listings (listings) ->
       for the_listing in listings
@@ -82,8 +88,10 @@ $(window).load () ->
       
     Severus.ajax
       type: "GET",
-      url: "json"
+      url: "/me"
       success: (data) ->
+        if "username" of data
+          set_username data.username
         console.log data
       error: (data) ->
         console.log "error"
@@ -106,12 +114,47 @@ $(window).load () ->
       add_listing = html.add_listing()
       
       body.append add_listing
-      body.append $ """
-      <!--<a href="javascript:$('iframe').attr('src','http://severus.the.tl/auth/twitter');void(0);">Login with Twitter</a>-->
-      
-      <a href="javascript:Severus.login()">Login with facebook</a>
-      """
-      
+      body.append $ '<div id="login-area"><\/div>'
+      render.login()
+
+    login: () -> #rendering login
+      $("#login-area").empty()
+      if username is "" 
+        $("#login-area").append $ """
+        <!--<a href="javascript:$('iframe').attr('src','http://severus.the.tl/auth/twitter');void(0);">Login with Twitter</a>-->
+        <pre>
+        <a href="javascript:Severus.login()">Login with facebook</a>
+        <form id="login-form">
+        What is your email address?
+        <input type="text" id="username">
+        <select id="question">
+          <option value="mom-maiden-name">What is your mom's Maiden Name?</option>
+          <option value="pets-name">What is your pet's maiden Name?</option>
+          <option value="dream-car">What is the maiden name of your dream car?</option>
+        </select>
+        <input type="text" id="password">
+        <input type="submit" value="Login/Create Account">
+        </form>
+        </pre>
+        """
+        $("#login-form").submit (e) ->
+          e.preventDefault()
+          creds = 
+            username: $("#username").val()
+            password: $("#question").val() + ":" + $("#password").val()
+          Severus.login creds, (data) ->
+            if data.result is true
+              set_username creds.username
+              
+          return false
+      else
+        body.append """
+        <pre>
+        Logged in as #{username}
+        <a href="#">Logout</a>
+        </pre>
+        """
+        
     google_map: () ->
       div_map = html.div().attr("id", "map").css
         width: 800
@@ -126,7 +169,7 @@ $(window).load () ->
         zoom: 11,
         center: latlng,
         mapTypeId: google.maps.MapTypeId.ROADMAP
-      };
+      }
       map = new google.maps.Map(document.getElementById("map"),myOptions)
     
     remove_adding_markers: () ->

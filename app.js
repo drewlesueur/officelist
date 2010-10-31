@@ -1,5 +1,5 @@
 (function() {
-  var Listing, adding_markers, body, bubbles, get_location, listing, listings, map, render, server, set, set_current_listing;
+  var Listing, adding_markers, body, bubbles, get_location, listing, listings, map, render, server, set, set_current_listing, set_username;
   map = "";
   body = $("body");
   window.map = map;
@@ -27,6 +27,11 @@
     _type: "listing"
   };
   window.listing = listing;
+  set_username = function(username1) {
+    console.log("trying to set username");
+    window.username = username1;
+    return render.login();
+  };
   set_current_listing = function(my_listing) {
     listing = my_listing;
     $("#location").val(listing.location);
@@ -75,7 +80,7 @@
   $(window).load(function() {
     var add_listing_form, go, html;
     go = function() {
-      window.username = "fix thiss";
+      window.username = "";
       server.get_all_listings(function(listings) {
         var _a, _b, _c, _d, the_listing;
         _a = []; _c = listings;
@@ -87,8 +92,11 @@
       });
       Severus.ajax({
         type: "GET",
-        url: "json",
+        url: "/me",
         success: function(data) {
+          if ("username" in data) {
+            set_username(data.username);
+          }
           return console.log(data);
         },
         error: function(data) {
@@ -110,7 +118,28 @@
         map_div = render.google_map();
         add_listing = html.add_listing();
         body.append(add_listing);
-        return body.append($("<!--<a href=\"javascript:$('iframe').attr('src','http://severus.the.tl/auth/twitter');void(0);\">Login with Twitter</a>-->\n\n<a href=\"javascript:Severus.login()\">Login with facebook</a>"));
+        body.append($('<div id="login-area"><\/div>'));
+        return render.login();
+      },
+      login: function() {
+        $("#login-area").empty();
+        if (username === "") {
+          $("#login-area").append($("<!--<a href=\"javascript:$('iframe').attr('src','http://severus.the.tl/auth/twitter');void(0);\">Login with Twitter</a>-->\n<pre>\n<a href=\"javascript:Severus.login()\">Login with facebook</a>\n<form id=\"login-form\">\nWhat is your email address?\n<input type=\"text\" id=\"username\">\n<select id=\"question\">\n  <option value=\"mom-maiden-name\">What is your mom's Maiden Name?</option>\n  <option value=\"pets-name\">What is your pet's maiden Name?</option>\n  <option value=\"dream-car\">What is the maiden name of your dream car?</option>\n</select>\n<input type=\"text\" id=\"password\">\n<input type=\"submit\" value=\"Login/Create Account\">\n</form>\n</pre>"));
+          return $("#login-form").submit(function(e) {
+            var creds;
+            e.preventDefault();
+            creds = {
+              username: $("#username").val(),
+              password: $("#question").val() + ":" + $("#password").val()
+            };
+            Severus.login(creds, function(data) {
+              return data.result === true ? set_username(creds.username) : null;
+            });
+            return false;
+          });
+        } else {
+          return body.append("<pre>\nLogged in as " + (username) + "\n<a href=\"#\">Logout</a>\n</pre>");
+        }
       },
       google_map: function() {
         var div_map, latlng, myOptions;
