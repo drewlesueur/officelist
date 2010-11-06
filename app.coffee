@@ -23,6 +23,7 @@ listing =  # the listing you are adding
   price: ""
   desc: ""
   _type: "listing"
+  _public: true
   
 window.listing = listing
 set_username = (username1) ->
@@ -83,6 +84,7 @@ $(window).load () ->
     
     #listing._user = username or "what"
     server.get_all_listings (listings) ->
+      console.log listings
       for the_listing in listings
         render.add_google_map_marker the_listing
       
@@ -90,7 +92,7 @@ $(window).load () ->
       type: "GET",
       url: "/me"
       success: (data) ->
-        if "username" of data
+        if "username" of data and data.username isnt ""
           set_username data.username
         console.log data
       error: (data) ->

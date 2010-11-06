@@ -24,7 +24,8 @@
     size: "",
     price: "",
     desc: "",
-    _type: "listing"
+    _type: "listing",
+    _public: true
   };
   window.listing = listing;
   set_username = function(username1) {
@@ -83,6 +84,7 @@
       window.username = "";
       server.get_all_listings(function(listings) {
         var _a, _b, _c, _d, the_listing;
+        console.log(listings);
         _a = []; _c = listings;
         for (_b = 0, _d = _c.length; _b < _d; _b++) {
           the_listing = _c[_b];
@@ -94,7 +96,7 @@
         type: "GET",
         url: "/me",
         success: function(data) {
-          if ("username" in data) {
+          if ("username" in data && data.username !== "") {
             set_username(data.username);
           }
           return console.log(data);
