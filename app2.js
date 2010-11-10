@@ -1,5 +1,6 @@
 (function() {
-  var LoginModel, LoginView, OfficeModel, OfficeView, OfficelistApp, OfficelistView, OfficesCollection, login, offices;
+  var LoginModel, LoginView, OfficeModel, OfficeView, OfficelistApp, OfficelistView, OfficesCollection, login, offices, render_map;
+  Backbone.emulateHttp = true;
   LoginModel = Backbone.Model.extend({
     username: ""
   });
@@ -13,7 +14,7 @@
       return (this.model.view = this);
     },
     render: function() {
-      return consoel.log("rendering", this.model);
+      return console.log("rendering", this.model);
     }
   });
   OfficelistApp = Backbone.Model.extend({
@@ -27,10 +28,10 @@
   offices = new OfficesCollection();
   OfficelistView = Backbone.View.extend({
     initialize: function() {
-      console.log("initialized!!!");
+      _.bindAll(this, 'addOne', 'addAll', 'render', 'render_map');
       offices.bind("refresh", this.render);
       offices.bind("refresh", this.addAll);
-      offices.fetch({
+      return offices.fetch({
         success: function() {
           return console.log("yay fetch");
         },
@@ -38,8 +39,8 @@
           return console.log("nay fetch");
         }
       });
-      return console.log("tried to fetch");
     },
+    removeAll: function() {},
     addAll: function() {
       return offices.each(this.addOne);
     },
@@ -49,13 +50,38 @@
         model: office
       });
       return view.render();
-    },
-    render: function() {
-      this.el = this.make("div", {}, "howdy");
-      $(document.body).append(this.el);
-      return this;
     }
   });
+  render_map = function() {
+    var latlng, myOptions;
+    this.map_el = this.make("div", {
+      id: "map"
+    }, "ima a map");
+    $(this.map).css({
+      width: screen.width * .8,
+      height: screen.height,
+      position: 'absolute',
+      left: screen.width * .2,
+      top: 0
+    });
+    latlng = new google.maps.LatLng(33.4222685, -111.8226402);
+    myOptions = {
+      zoom: 11,
+      center: latlng,
+      mapTypeId: google.maps.MapTypeId.ROADMAP
+    };
+    this.map = new google.maps.Map(this.map_el, myOptions);
+    return {
+      render: function() {
+        alert("THIS IS THE OFFICELIST VIEW!");
+        this.render_map();
+        this.el = this.make("div", {}, "howdy");
+        $(document.body).append(this.el);
+        $(this.el).append(this.map_el);
+        return this;
+      }
+    };
+  };
   Severus.initialize("http://severus.the.tl/severus.html", function() {
     var app;
     return (app = new OfficelistView());
