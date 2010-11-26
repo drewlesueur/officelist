@@ -43,10 +43,10 @@
   };
   server = "";
   set = function(obj, vals) {
-    var _a, type;
+    var _ref, type;
     _.extend(obj, vals);
     type = _.capitalize(obj._type);
-    return (typeof (_a = window[type]) !== "undefined" && _a !== null) && window[type].set ? window[type].set(obj, vals) : console.log(obj, type, window[type]);
+    return (typeof (_ref = window[type]) !== "undefined" && _ref !== null) && window[type].set ? window[type].set(obj, vals) : console.log(obj, type, window[type]);
   };
   Listing = {
     set: function(listing, vals) {
@@ -83,14 +83,14 @@
     go = function() {
       window.username = "";
       server.get_all_listings(function(listings) {
-        var _a, _b, _c, _d, the_listing;
+        var _i, _len, _ref, _result, the_listing;
         console.log(listings);
-        _a = []; _c = listings;
-        for (_b = 0, _d = _c.length; _b < _d; _b++) {
-          the_listing = _c[_b];
-          _a.push(render.add_google_map_marker(the_listing));
+        _result = []; _ref = listings;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          the_listing = _ref[_i];
+          _result.push(render.add_google_map_marker(the_listing));
         }
-        return _a;
+        return _result;
       });
       Severus.ajax({
         type: "GET",
@@ -162,13 +162,13 @@
         return (map = new google.maps.Map(document.getElementById("map"), myOptions));
       },
       remove_adding_markers: function() {
-        var _a, _b, _c, _d, i;
-        _a = []; _c = adding_markers;
-        for (_b = 0, _d = _c.length; _b < _d; _b++) {
-          i = _c[_b];
-          _a.push(i.setMap(null));
+        var _i, _len, _ref, _result, i;
+        _result = []; _ref = adding_markers;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          i = _ref[_i];
+          _result.push(i.setMap(null));
         }
-        return _a;
+        return _result;
       },
       add_google_map_marker: function(my_listing, callback) {
         var bubble_open, handle_marker_click, loc, marker, marker_options;
@@ -189,14 +189,14 @@
           adding_markers.push(marker);
         }
         bubble_open = function() {
-          var _a, _b, _c, blubbles, bubble, bubbly, info;
+          var _i, _len, _ref, blubbles, bubble, bubbly, info;
           info = ("<pre>\n<span class=\"bubble location\">" + (my_listing.location) + "</span>\n<span class=\"bubble size\">" + (my_listing.size) + "</span>\n<span class=\"bubble price\">" + (my_listing.price) + "</span>\n<span class=\"bubble desc\">" + (my_listing.desc) + "</span>\n</pre>");
           bubble = new google.maps.InfoWindow({
             content: info
           });
-          _b = bubbles;
-          for (_a = 0, _c = _b.length; _a < _c; _a++) {
-            bubbly = _b[_a];
+          _ref = bubbles;
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            bubbly = _ref[_i];
             bubbly.close();
           }
           blubbles = [];
@@ -266,4 +266,4 @@
       })
     });
   });
-})();
+}).call(this);

@@ -86,4 +86,4 @@
     var app;
     return (app = new OfficelistView());
   });
-})();
+}).call(this);
