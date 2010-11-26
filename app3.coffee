@@ -22,6 +22,17 @@ GoogleMap = NeckBrace.Type.copy
       center: latlng
       mapTypeId: google.maps.MapTypeId.ROADMAP
     map = new google.maps.Map o.__el, myOptions
+  get_location: (wherethe, callback) ->
+    geocoder = new google.maps.Geocoder()
+    geocoder.geocode address: wherethe, (results, status) ->
+      if status is google.maps.GeocoderStatus.OK
+        callback(results[0].geometry.location)
+      else
+        console.log status
+        console.log results
+        console.log "there was a problem looking up #{wherethe}"
+
+
 
 Listing = NeckBrace.Type.copy
   name: "listing"
@@ -35,6 +46,7 @@ Login = NeckBrace.Type.copy
   element: "div"
   append: (o) ->
     this.super.append o
+    that = this
     $(o.__el).append """
       <div id="logged_in_block" style="display:none;">
         Logged in as <div id="username_display"></div>
@@ -73,17 +85,186 @@ Login = NeckBrace.Type.copy
         password: $("#question").val() + ":" + $("#password").val()
       Severus.login creds, (data) ->
         if data.result is true
-          $('#not_logged_in_block').hide()
-          $('#logged_in_block').show()
-          $('#username_display').text creds.username
-          app.username = creds.username
+          o.username = creds.username
+          that.render o
     $('#logout_link').click () ->
       Severus.logout (data) ->
         if data.result is true
-          $('#not_logged_in_block').show()
-          $('#logged_in_block').hide()
-          $('#username_display').text ""
-          app.username = "" #maybe just change app.username and call render_usrename() to make changes
+          o.username = "" #maybe just change app.username and call render_usrename() to make changes
+          that.render o
+  render: (o) ->
+    if o.username isnt ""
+      $('#not_logged_in_block').hide()
+      $('#logged_in_block').show()
+      console.log "parent is", o.__parent
+      $('#username_display').text o.username
+    else
+      $('#not_logged_in_block').show()
+      $('#logged_in_block').hide()
+      $('#username_display').text ""
+
+Search = NeckBrace.Type.copy
+  name: "Search"
+  append: (o) ->
+    this.super.append o
+    $(o.__el).append """
+      <pre>
+      <h1 id="search_heading">Search</h1><form id="search_form" class="main-input-toggle">
+      <select id="search_for_lease">
+        <option>For Lease</option>
+        <option>For Sale</option>
+      </select>
+      <input type="checkbox" name="built_out" value="built_out"/> built out
+      <input type="checkbox" name="built_out" value="shell"> shell
+      City or Zip
+      <input type="text" name="city">
+      Square Feet
+      <input type="text" name="min" size="4" /><input type="text" name="max" size="4" />
+      Price/Month
+      <input type="text" name="min" size="4" /><input type="text" name="max" size="4"/>
+      Keywords
+      <input type="text" name="keywords">
+      <input type="submit" value="Search">
+      </form>
+      </pre>
+    """
+    $('#search_heading').click (e) ->
+      $('.main-input-toggle').toggle('slow')
+
+
+    $('#search_form').submit (e) ->
+      e.preventDefault()
+
+      return false
+
+Marker = NeckBrace.Type.copy
+  name: "Marker"
+  element: "n/a"
+  append: (o) ->
+    marker_options =
+      position: o.listing.loc
+      map: map
+      title: "hello world"
+      icon: "pin.png"
+    o._marker = new google.maps.Marker marker_options
+    map.setCenter o.listing.loc
+    map.setZoom 15
+  remove: (o) ->
+    o?._marker?.setMap null
+  
+
+Listing = NeckBrace.Type.copy
+  name: "Listing"
+  element: "n/a"
+  initialize: (o) ->
+    #do nothing
+  append: (o) ->
+    #do noting
+  render: (o) ->
+  render_position: (o) -> #deprecated
+    loc = new google.maps.LatLng o.lat, o.lng
+    marker_options = 
+      position: loc
+      map: map
+      title: "hello world"
+      icon: "pin.png"
+    
+    if o._user is app.login.username
+      marker_options.draggable = true
+      marker_options.icon = "apartment.png"
+    marker = new google.maps.Marker marker_options
+    map.setZoom 15 
+    if o.is_new is true
+      render.remove_adding_markers()
+      adding_markers.push marker
+    
+    bubble_open = () ->
+      info = """
+      <pre>
+      <span class="bubble location">#{o.location}</span>
+      <span class="bubble size">#{o.size}</span>
+      <span class="bubble price">#{o.price}</span>
+      <span class="bubble desc">#{o.desc}</span>
+      </pre>
+      """ 
+      bubble = new google.maps.InfoWindow
+        content: info
+      for bubbly in bubbles
+        bubbly.close()
+      blubbles = []
+      bubbles.push bubble
+      bubble.open map, marker
+      o.bubble = bubble
+      
+    handle_marker_click = () ->
+      bubble_open()
+      console.log my_listing
+      #if my_listing._user is username
+    google.maps.event.addListener marker, "click", handle_marker_click   
+    if o.is_new is true
+      bubble_open()
+
+
+  change_address: (address) ->
+    GoogleMap.get_location address, (loc) ->
+      console.log "loc is", loc
+      app.listing.address = address
+      app.listing.loc = loc
+      app.listing.lat = loc.lat()
+      app.listing.lng = loc.lng()
+      Marker.remove app.listing.marker #times like these where i may want app.listing.remove()
+      #and use prototypal inheritance.
+      #app.listing.marker?.remove()
+      app.listing.marker = obj
+        __type: Marker
+        listing: app.listing #point back to the listing for reference
+        
+
+  
+
+AddSpot = NeckBrace.Type.copy
+  name : "edit spot"
+  element: "div"
+  append: (o) ->
+    this.super.append o
+    $(o.__el).append """
+      <pre>
+      <h1 id="add_heading">Add</h1><form class="main-input-toggle" style="display:none;" id="add_form">
+      Address
+      <input id="address" />
+      <input type="radio" name="built_out" value="built_out"/> built out
+      <input type="radio" name="built_out" value="shell"> shell
+      Square Feet
+      <input type="text" name="square_feet">
+      <span id="price_per_month">Price/Month</span>
+      Price Includes (check all that apply)
+      <input type="checkbox" id="all_the_below"> All the below
+      <input type="checkbox" id="property_taxes"> Property Taxes
+      <input type="checkbox" id="all_the_below"> Renal Tax
+      <input type="checkbox" id="all_the_below"> Insurance building and TI insurance
+      <input type="checkbox" id="all_the_below"> CAM Fees
+      <input type="checkbox" id="all_the_below"> Electricity
+      <input type="checkbox" id="all_the_below"> Water
+      <input type="checkbox" id="all_the_below"> Janitorial
+      <input type="checkbox" id="all_the_below"> Internet
+      <input type="checkbox" id="all_the_below"> Phone Line
+      <input type="checkbox" id="all_the_below"> Alarm Sytem Monitoring
+      Description
+      <textarea id="description"></textarea>
+      Youtube Video (link or embed code)
+      <input type="text" id="youtube" />
+      <input type="submit" value="Add" id="add_submit">
+      </form>
+      </pre>
+    """
+    $('#add_heading').click (e) ->
+      $('.main-input-toggle').toggle('slow')
+    $('#add_form').submit (e) ->
+      e.preventDefault()
+
+      return false
+    $('#address').typed callback: () ->
+      Listing.change_address $('#address').val()
 
 
 App = NeckBrace.Type.copy
@@ -94,16 +275,18 @@ App = NeckBrace.Type.copy
     Severus.ajax
       url: "/me"
       success: (data) ->
-        console.log data
+        o.login.username = data.username
+        Login.render o.login
+        
         that.super.initialize o 
   append: (o) ->
     this.super.append o
     $(document.body).css
-      overflow: "hidden"
+      "overflow-x": "hidden"
       margin: 0
       padding: 0
     $(o.__el).css
-      overflow: "hidden"
+      "overflow-x": "hidden"
     $(o.__el).attr("id", "officelist-app").append """
         
     """
@@ -111,16 +294,21 @@ App = NeckBrace.Type.copy
     this.render_login o
     
 start = () ->
-  console.log "started"
   app = obj
-    username: ""
     login: obj
+      username: ""
       __type: Login
-
+    search: obj
+      __type: Search
+    add: obj
+      __type: AddSpot
     map: obj
       value: ""
       __type: GoogleMap
     __type: App
+    listing: obj
+      __type: Listing
+    listings: []
     
    
 $(document).ready () ->
