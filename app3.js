@@ -1,5 +1,5 @@
 (function() {
-  var AddSpot, App, GoogleMap, Listing, Login, Marker, Search, app, arr, map, obj, render, start;
+  var AddSpot, App, Bubble, GoogleMap, Listing, Login, Marker, Search, app, arr, map, obj, render, start;
   obj = NeckBrace.obj;
   arr = NeckBrace.arr;
   map = "";
@@ -131,10 +131,26 @@
       };
       o._marker = new google.maps.Marker(marker_options);
       map.setCenter(o.listing.loc);
-      return map.setZoom(15);
+      map.setZoom(15);
+      return o.listing.bubble;
     },
     remove: function(o) {
       return (typeof o === "undefined" || o === null) ? undefined : o._marker == null ? undefined : o._marker.setMap(null);
+    }
+  });
+  Bubble = NeckBrace.Type.copy({
+    name: "bubble",
+    append: function(o) {
+      var info;
+      info = ("<pre>\n<span class=\"bubble location\">" + (o.listing.address) + "</span>\n<span class=\"bubble size\">" + (o.listing.size) + "</span>\n<span class=\"bubble price\">" + (o.listing.price) + "</span>\n<span class=\"bubble desc\">" + (o.listing.desc) + "</span>\n</pre>");
+      o._bubble = new google.maps.InfoWindow({
+        content: info
+      });
+      return o._bubble.open(map, o.listing.marker._marker);
+    },
+    render: function(o) {},
+    remove: function(o) {
+      return (typeof o === "undefined" || o === null) ? undefined : o._bubble.close();
     }
   });
   Listing = NeckBrace.Type.copy({
@@ -142,48 +158,9 @@
     element: "n/a",
     initialize: function(o) {},
     append: function(o) {},
-    render: function(o) {},
-    render_position: function(o) {
-      var bubble_open, handle_marker_click, loc, marker, marker_options;
-      loc = new google.maps.LatLng(o.lat, o.lng);
-      marker_options = {
-        position: loc,
-        map: map,
-        title: "hello world",
-        icon: "pin.png"
-      };
-      if (o._user === app.login.username) {
-        marker_options.draggable = true;
-        marker_options.icon = "apartment.png";
-      }
-      marker = new google.maps.Marker(marker_options);
-      map.setZoom(15);
-      if (o.is_new === true) {
-        render.remove_adding_markers();
-        adding_markers.push(marker);
-      }
-      bubble_open = function() {
-        var _i, _len, _ref, blubbles, bubble, bubbly, info;
-        info = ("<pre>\n<span class=\"bubble location\">" + (o.location) + "</span>\n<span class=\"bubble size\">" + (o.size) + "</span>\n<span class=\"bubble price\">" + (o.price) + "</span>\n<span class=\"bubble desc\">" + (o.desc) + "</span>\n</pre>");
-        bubble = new google.maps.InfoWindow({
-          content: info
-        });
-        _ref = bubbles;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          bubbly = _ref[_i];
-          bubbly.close();
-        }
-        blubbles = [];
-        bubbles.push(bubble);
-        bubble.open(map, marker);
-        return (o.bubble = bubble);
-      };
-      handle_marker_click = function() {
-        bubble_open();
-        return console.log(my_listing);
-      };
-      google.maps.event.addListener(marker, "click", handle_marker_click);
-      return o.is_new === true ? bubble_open() : null;
+    render: function(o) {
+      Marker.render(o.marker);
+      return Bubble.render(o.bubble);
     },
     change_address: function(address) {
       return GoogleMap.get_location(address, function(loc) {
@@ -193,8 +170,13 @@
         app.listing.lat = loc.lat();
         app.listing.lng = loc.lng();
         Marker.remove(app.listing.marker);
-        return (app.listing.marker = obj({
+        app.listing.marker = obj({
           __type: Marker,
+          listing: app.listing
+        });
+        Bubble.remove(app.listing.bubble);
+        return (app.listing.bubble = obj({
+          __type: Bubble,
           listing: app.listing
         }));
       });
@@ -213,10 +195,17 @@
         e.preventDefault();
         return false;
       });
-      return $('#address').typed({
+      $('#address').typed({
         callback: function() {
           return Listing.change_address($('#address').val());
         }
+      });
+      $('[name="built_out"]').click(function(e) {
+        app.listing.built_out = $(this).val();
+        return Listing.render(app.listing);
+      });
+      return $('#square_feet, #description').keyup(function(e) {
+        return Listing.render(app.listing);
       });
     }
   });

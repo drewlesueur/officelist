@@ -149,10 +149,30 @@ Marker = NeckBrace.Type.copy
     o._marker = new google.maps.Marker marker_options
     map.setCenter o.listing.loc
     map.setZoom 15
+    
+    o.listing.bubble
+    #specifically not calling this.super.append o
   remove: (o) ->
     o?._marker?.setMap null
   
-
+Bubble = NeckBrace.Type.copy
+  name: "bubble"
+  append: (o) ->
+    info = """
+      <pre>
+      <span class="bubble location">#{o.listing.address}</span>
+      <span class="bubble size">#{o.listing.size}</span>
+      <span class="bubble price">#{o.listing.price}</span>
+      <span class="bubble desc">#{o.listing.desc}</span>
+      </pre>
+    """ 
+    o._bubble = new google.maps.InfoWindow
+      content: info
+    o._bubble.open map, o.listing.marker._marker
+  render: (o) ->
+    
+  remove: (o) ->
+    o?._bubble.close()
 Listing = NeckBrace.Type.copy
   name: "Listing"
   element: "n/a"
@@ -161,50 +181,8 @@ Listing = NeckBrace.Type.copy
   append: (o) ->
     #do noting
   render: (o) ->
-  render_position: (o) -> #deprecated
-    loc = new google.maps.LatLng o.lat, o.lng
-    marker_options = 
-      position: loc
-      map: map
-      title: "hello world"
-      icon: "pin.png"
-    
-    if o._user is app.login.username
-      marker_options.draggable = true
-      marker_options.icon = "apartment.png"
-    marker = new google.maps.Marker marker_options
-    map.setZoom 15 
-    if o.is_new is true
-      render.remove_adding_markers()
-      adding_markers.push marker
-    
-    bubble_open = () ->
-      info = """
-      <pre>
-      <span class="bubble location">#{o.location}</span>
-      <span class="bubble size">#{o.size}</span>
-      <span class="bubble price">#{o.price}</span>
-      <span class="bubble desc">#{o.desc}</span>
-      </pre>
-      """ 
-      bubble = new google.maps.InfoWindow
-        content: info
-      for bubbly in bubbles
-        bubbly.close()
-      blubbles = []
-      bubbles.push bubble
-      bubble.open map, marker
-      o.bubble = bubble
-      
-    handle_marker_click = () ->
-      bubble_open()
-      console.log my_listing
-      #if my_listing._user is username
-    google.maps.event.addListener marker, "click", handle_marker_click   
-    if o.is_new is true
-      bubble_open()
-
-
+    Marker.render o.marker
+    Bubble.render o.bubble
   change_address: (address) ->
     GoogleMap.get_location address, (loc) ->
       console.log "loc is", loc
@@ -218,7 +196,10 @@ Listing = NeckBrace.Type.copy
       app.listing.marker = obj
         __type: Marker
         listing: app.listing #point back to the listing for reference
-        
+      Bubble.remove app.listing.bubble
+      app.listing.bubble = obj
+        __type: Bubble
+        listing: app.listing
 
   
 
@@ -265,7 +246,12 @@ AddSpot = NeckBrace.Type.copy
       return false
     $('#address').typed callback: () ->
       Listing.change_address $('#address').val()
-
+    
+    $('[name="built_out"]').click (e) ->
+      app.listing.built_out = $(this).val()
+      Listing.render app.listing
+    $('#square_feet, #description').keyup (e) ->
+      Listing.render app.listing
 
 App = NeckBrace.Type.copy
   name: "app"
