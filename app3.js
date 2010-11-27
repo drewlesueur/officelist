@@ -1,5 +1,6 @@
 (function() {
   var AddSpot, App, Bubble, GoogleMap, Listing, Login, Marker, Search, app, arr, map, obj, render, start;
+  var __hasProp = Object.prototype.hasOwnProperty;
   obj = Neckbrace.obj;
   arr = Neckbrace.arr;
   map = "";
@@ -36,12 +37,6 @@
       });
     }
   });
-  Listing = Neckbrace.Type.copy({
-    name: "listing",
-    element: "n/a",
-    append: function(o) {},
-    render: function(o) {}
-  });
   Login = Neckbrace.Type.copy({
     name: "login",
     element: "div",
@@ -68,10 +63,13 @@
           password: $("#question").val() + ":" + $("#password").val()
         };
         return Severus.login(creds, function(data) {
-          if (data.result === true) {
-            o.username = creds.username;
-            return that.render(o);
-          }
+          return data.result === true ? Severus.ajax({
+            url: "/me",
+            success: function(data) {
+              o.username = data.username;
+              return that.render(o);
+            }
+          }) : null;
         });
       });
       return $('#logout_link').click(function() {
@@ -84,10 +82,13 @@
       });
     },
     render: function(o) {
+      var username;
       if (o.username !== "") {
+        username = o.username.split(":");
+        o.user_part = username[1];
         $('#not_logged_in_block').hide();
         $('#logged_in_block').show();
-        return $('#username_display').text(o.username);
+        return $('#username_display').text(o.user_part);
       } else {
         $('#not_logged_in_block').show();
         $('#logged_in_block').hide();
@@ -152,7 +153,9 @@
     }
   });
   Listing = Neckbrace.Type.copy({
-    name: "Listing",
+    name: "listing",
+    plural: "listings",
+    ajax: Severus.ajax,
     element: "n/a",
     initialize: function(o) {},
     append: function(o) {},
@@ -177,6 +180,20 @@
           listing: app.listing
         }));
       });
+    },
+    before_save: function(o) {
+      var _ref, key, ret, val;
+      ret = {};
+      _ref = o;
+      for (key in _ref) {
+        if (!__hasProp.call(_ref, key)) continue;
+        val = _ref[key];
+        if (!('bubble' === key || 'marker' === key)) {
+          ret[key] = val;
+        }
+      }
+      ret._public = true;
+      return this["super"].before_save(ret);
     }
   });
   AddSpot = Neckbrace.Type.copy({
@@ -251,7 +268,7 @@
     return this.render_login(o);
   };
   start = function() {
-    return (app = obj({
+    return (app = (window.app = obj({
       login: obj({
         username: "",
         __type: Login
@@ -271,7 +288,7 @@
         __type: Listing
       }),
       listings: []
-    }));
+    })));
   };
   $(document).ready(function() {
     return Severus.initialize("http://severus.the.tl/severus.html", start);

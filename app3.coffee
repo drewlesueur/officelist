@@ -32,12 +32,6 @@ GoogleMap = Neckbrace.Type.copy
 
 
 
-Listing = Neckbrace.Type.copy
-  name: "listing"
-  element: "n/a"
-  append: (o) ->
-  render: (o) ->
-    #do other things
 Login = Neckbrace.Type.copy
   name: "login"
   element: "div"
@@ -82,18 +76,24 @@ Login = Neckbrace.Type.copy
         password: $("#question").val() + ":" + $("#password").val()
       Severus.login creds, (data) ->
         if data.result is true
-          o.username = creds.username
-          that.render o
+          Severus.ajax
+            url: "/me"
+            success : (data) ->
+              o.username = data.username
+              that.render o
     $('#logout_link').click () ->
       Severus.logout (data) ->
         if data.result is true
           o.username = "" #maybe just change app.username and call render_usrename() to make changes
           that.render o
   render: (o) ->
+    
     if o.username isnt ""
+      username = o.username.split ":"
+      o.user_part = username[1]
       $('#not_logged_in_block').hide()
       $('#logged_in_block').show()
-      $('#username_display').text o.username
+      $('#username_display').text o.user_part
     else
       $('#not_logged_in_block').show()
       $('#logged_in_block').hide()
@@ -176,7 +176,10 @@ Bubble = Neckbrace.Type.copy
   remove: (o) ->
     o?._bubble.close()
 Listing = Neckbrace.Type.copy
-  name: "Listing"
+  
+  name: "listing"
+  plural: "listings"
+  ajax: Severus.ajax
   element: "n/a"
   initialize: (o) ->
     #do nothing
@@ -201,7 +204,14 @@ Listing = Neckbrace.Type.copy
       app.listing.bubble = obj
         __type: Bubble
         listing: app.listing
-
+  before_save: (o) ->
+    ret = {}
+    for key, val of o
+      if key not in ['bubble', 'marker']
+        ret[key] = val
+    ret._public = true
+    return this.super.before_save ret
+  
   
 
 AddSpot = Neckbrace.Type.copy
@@ -243,6 +253,7 @@ AddSpot = Neckbrace.Type.copy
       $('.main-input-toggle').toggle('slow')
     $('#add_form').submit (e) ->
       e.preventDefault()
+      
       app.listing.__type.save app.listing,
         success: (data) ->
           console.log "successfully clean"
@@ -294,7 +305,7 @@ App = Neckbrace.Type.copy
     this.render_login o
     
 start = () ->
-  app = obj
+  app = window.app = obj
     login: obj
       username: ""
       __type: Login
