@@ -1,10 +1,10 @@
 (function() {
   var AddSpot, App, Bubble, GoogleMap, Listing, Login, Marker, Search, app, arr, map, obj, render, start;
-  obj = NeckBrace.obj;
-  arr = NeckBrace.arr;
+  obj = Neckbrace.obj;
+  arr = Neckbrace.arr;
   map = "";
   app = "";
-  GoogleMap = NeckBrace.Type.copy({
+  GoogleMap = Neckbrace.Type.copy({
     name: "Google Map",
     element: "div",
     append: function(o) {
@@ -32,25 +32,17 @@
       return geocoder.geocode({
         address: wherethe
       }, function(results, status) {
-        if (status === google.maps.GeocoderStatus.OK) {
-          return callback(results[0].geometry.location);
-        } else {
-          console.log(status);
-          console.log(results);
-          return console.log("there was a problem looking up " + (wherethe));
-        }
+        return status === google.maps.GeocoderStatus.OK ? callback(results[0].geometry.location) : console.log("there was a problem looking up " + (wherethe));
       });
     }
   });
-  Listing = NeckBrace.Type.copy({
+  Listing = Neckbrace.Type.copy({
     name: "listing",
     element: "n/a",
-    append: function(o) {
-      return console.log("just add to google map");
-    },
+    append: function(o) {},
     render: function(o) {}
   });
-  Login = NeckBrace.Type.copy({
+  Login = Neckbrace.Type.copy({
     name: "login",
     element: "div",
     append: function(o) {
@@ -95,7 +87,6 @@
       if (o.username !== "") {
         $('#not_logged_in_block').hide();
         $('#logged_in_block').show();
-        console.log("parent is", o.__parent);
         return $('#username_display').text(o.username);
       } else {
         $('#not_logged_in_block').show();
@@ -104,7 +95,7 @@
       }
     }
   });
-  Search = NeckBrace.Type.copy({
+  Search = Neckbrace.Type.copy({
     name: "Search",
     append: function(o) {
       this["super"].append(o);
@@ -118,7 +109,7 @@
       });
     }
   });
-  Marker = NeckBrace.Type.copy({
+  Marker = Neckbrace.Type.copy({
     name: "Marker",
     element: "n/a",
     append: function(o) {
@@ -132,28 +123,35 @@
       o._marker = new google.maps.Marker(marker_options);
       map.setCenter(o.listing.loc);
       map.setZoom(15);
-      return o.listing.bubble;
+      return google.maps.event.addListener(o._marker, "click", function() {
+        return o.listing.bubble._bubble.open(map, o._marker);
+      });
     },
     remove: function(o) {
       return (typeof o === "undefined" || o === null) ? undefined : o._marker == null ? undefined : o._marker.setMap(null);
     }
   });
-  Bubble = NeckBrace.Type.copy({
+  Bubble = Neckbrace.Type.copy({
     name: "bubble",
     append: function(o) {
       var info;
-      info = ("<pre>\n<span class=\"bubble location\">" + (o.listing.address) + "</span>\n<span class=\"bubble size\">" + (o.listing.size) + "</span>\n<span class=\"bubble price\">" + (o.listing.price) + "</span>\n<span class=\"bubble desc\">" + (o.listing.desc) + "</span>\n</pre>");
+      info = ("<pre style=\"height: 200px;\">\n<span class=\"bubble location\">" + (o.listing.address || "") + "</span>\n<span class=\"bubble price\">" + (o.listing.price || "") + "</span>\n<span class=\"bubble description\">" + (o.listing.description || "") + "</span>\n<span class=\"bubble square_feet\">" + (o.listing.square_feet || "") + "</span>\n<span class=\"bubble built_out\">" + (o.listing.built_out || "") + "</span>\n</pre>");
       o._bubble = new google.maps.InfoWindow({
         content: info
       });
       return o._bubble.open(map, o.listing.marker._marker);
     },
-    render: function(o) {},
+    render: function(o) {
+      $('.bubble.square_feet').text(o.listing.square_feet);
+      $('.bubble.price').text(o.listing.price);
+      $('.bubble.description').text(o.listing.description);
+      return $('.bubble.built_out').text(o.listing.built_out);
+    },
     remove: function(o) {
       return (typeof o === "undefined" || o === null) ? undefined : o._bubble.close();
     }
   });
-  Listing = NeckBrace.Type.copy({
+  Listing = Neckbrace.Type.copy({
     name: "Listing",
     element: "n/a",
     initialize: function(o) {},
@@ -164,7 +162,6 @@
     },
     change_address: function(address) {
       return GoogleMap.get_location(address, function(loc) {
-        console.log("loc is", loc);
         app.listing.address = address;
         app.listing.loc = loc;
         app.listing.lat = loc.lat();
@@ -182,17 +179,25 @@
       });
     }
   });
-  AddSpot = NeckBrace.Type.copy({
+  AddSpot = Neckbrace.Type.copy({
     name: "edit spot",
     element: "div",
     append: function(o) {
       this["super"].append(o);
-      $(o.__el).append("<pre>\n<h1 id=\"add_heading\">Add</h1><form class=\"main-input-toggle\" style=\"display:none;\" id=\"add_form\">\nAddress\n<input id=\"address\" />\n<input type=\"radio\" name=\"built_out\" value=\"built_out\"/> built out\n<input type=\"radio\" name=\"built_out\" value=\"shell\"> shell\nSquare Feet\n<input type=\"text\" name=\"square_feet\">\n<span id=\"price_per_month\">Price/Month</span>\nPrice Includes (check all that apply)\n<input type=\"checkbox\" id=\"all_the_below\"> All the below\n<input type=\"checkbox\" id=\"property_taxes\"> Property Taxes\n<input type=\"checkbox\" id=\"all_the_below\"> Renal Tax\n<input type=\"checkbox\" id=\"all_the_below\"> Insurance building and TI insurance\n<input type=\"checkbox\" id=\"all_the_below\"> CAM Fees\n<input type=\"checkbox\" id=\"all_the_below\"> Electricity\n<input type=\"checkbox\" id=\"all_the_below\"> Water\n<input type=\"checkbox\" id=\"all_the_below\"> Janitorial\n<input type=\"checkbox\" id=\"all_the_below\"> Internet\n<input type=\"checkbox\" id=\"all_the_below\"> Phone Line\n<input type=\"checkbox\" id=\"all_the_below\"> Alarm Sytem Monitoring\nDescription\n<textarea id=\"description\"></textarea>\nYoutube Video (link or embed code)\n<input type=\"text\" id=\"youtube\" />\n<input type=\"submit\" value=\"Add\" id=\"add_submit\">\n</form>\n</pre>");
+      $(o.__el).append("<pre>\n<h1 id=\"add_heading\">Add</h1><form class=\"main-input-toggle\" style=\"display:none;\" id=\"add_form\">\nAddress\n<input id=\"address\" />\n<input type=\"radio\" name=\"built_out\" value=\"Built out\"/> built out\n<input type=\"radio\" name=\"built_out\" value=\"shell\"> shell\nSquare Feet\n<input type=\"text\" id=\"square_feet\" name=\"square_feet\">\n<span id=\"price_per_month\">Price/Month</span>\nPrice Includes (check all that apply)\n<input type=\"checkbox\" id=\"all_the_below\"> All the below\n<input type=\"checkbox\" id=\"property_taxes\"> Property Taxes\n<input type=\"checkbox\" id=\"all_the_below\"> Renal Tax\n<input type=\"checkbox\" id=\"all_the_below\"> Insurance building and TI insurance\n<input type=\"checkbox\" id=\"all_the_below\"> CAM Fees\n<input type=\"checkbox\" id=\"all_the_below\"> Electricity\n<input type=\"checkbox\" id=\"all_the_below\"> Water\n<input type=\"checkbox\" id=\"all_the_below\"> Janitorial\n<input type=\"checkbox\" id=\"all_the_below\"> Internet\n<input type=\"checkbox\" id=\"all_the_below\"> Phone Line\n<input type=\"checkbox\" id=\"all_the_below\"> Alarm Sytem Monitoring\nDescription\n<textarea id=\"description\"></textarea>\nYoutube Video (link or embed code)\n<input type=\"text\" id=\"youtube\" />\n<input type=\"submit\" value=\"Add\" id=\"add_submit\">\n</form>\n</pre>");
       $('#add_heading').click(function(e) {
         return $('.main-input-toggle').toggle('slow');
       });
       $('#add_form').submit(function(e) {
         e.preventDefault();
+        app.listing.__type.save(app.listing, {
+          success: function(data) {
+            return console.log("successfully clean");
+          },
+          error: function(data) {
+            return console.log("error");
+          }
+        });
         return false;
       });
       $('#address').typed({
@@ -204,12 +209,17 @@
         app.listing.built_out = $(this).val();
         return Listing.render(app.listing);
       });
-      return $('#square_feet, #description').keyup(function(e) {
+      $('#square_feet').keyup(function(e) {
+        app.listing.square_feet = $(this).val();
+        return Listing.render(app.listing);
+      });
+      return $('#description').keyup(function(e) {
+        app.listing.description = $(this).val();
         return Listing.render(app.listing);
       });
     }
   });
-  App = NeckBrace.Type.copy({
+  App = Neckbrace.Type.copy({
     name: "app",
     element: "div",
     initialize: function(o) {

@@ -1,9 +1,9 @@
 #for simpler programming
-obj = NeckBrace.obj
-arr = NeckBrace.arr
+obj = Neckbrace.obj
+arr = Neckbrace.arr
 map = "" #for the google map
 app = "" #for the main app
-GoogleMap = NeckBrace.Type.copy
+GoogleMap = Neckbrace.Type.copy
   name: "Google Map"
   element: "div"
   append: (o) ->
@@ -28,20 +28,17 @@ GoogleMap = NeckBrace.Type.copy
       if status is google.maps.GeocoderStatus.OK
         callback(results[0].geometry.location)
       else
-        console.log status
-        console.log results
         console.log "there was a problem looking up #{wherethe}"
 
 
 
-Listing = NeckBrace.Type.copy
+Listing = Neckbrace.Type.copy
   name: "listing"
   element: "n/a"
   append: (o) ->
-    console.log "just add to google map"
   render: (o) ->
     #do other things
-Login = NeckBrace.Type.copy
+Login = Neckbrace.Type.copy
   name: "login"
   element: "div"
   append: (o) ->
@@ -96,14 +93,13 @@ Login = NeckBrace.Type.copy
     if o.username isnt ""
       $('#not_logged_in_block').hide()
       $('#logged_in_block').show()
-      console.log "parent is", o.__parent
       $('#username_display').text o.username
     else
       $('#not_logged_in_block').show()
       $('#logged_in_block').hide()
       $('#username_display').text ""
 
-Search = NeckBrace.Type.copy
+Search = Neckbrace.Type.copy
   name: "Search"
   append: (o) ->
     this.super.append o
@@ -137,7 +133,7 @@ Search = NeckBrace.Type.copy
 
       return false
 
-Marker = NeckBrace.Type.copy
+Marker = Neckbrace.Type.copy
   name: "Marker"
   element: "n/a"
   append: (o) ->
@@ -149,31 +145,37 @@ Marker = NeckBrace.Type.copy
     o._marker = new google.maps.Marker marker_options
     map.setCenter o.listing.loc
     map.setZoom 15
-    
-    o.listing.bubble
     #specifically not calling this.super.append o
+    google.maps.event.addListener o._marker, "click", () ->
+      o.listing.bubble._bubble.open map, o._marker
+      # now, make it editable if you can
+
   remove: (o) ->
     o?._marker?.setMap null
   
-Bubble = NeckBrace.Type.copy
+Bubble = Neckbrace.Type.copy
   name: "bubble"
   append: (o) ->
     info = """
-      <pre>
-      <span class="bubble location">#{o.listing.address}</span>
-      <span class="bubble size">#{o.listing.size}</span>
-      <span class="bubble price">#{o.listing.price}</span>
-      <span class="bubble desc">#{o.listing.desc}</span>
+      <pre style="height: 200px;">
+      <span class="bubble location">#{o.listing.address or ""}</span>
+      <span class="bubble price">#{o.listing.price or ""}</span>
+      <span class="bubble description">#{o.listing.description or ""}</span>
+      <span class="bubble square_feet">#{o.listing.square_feet or ""}</span>
+      <span class="bubble built_out">#{o.listing.built_out or ""}</span>
       </pre>
     """ 
     o._bubble = new google.maps.InfoWindow
       content: info
     o._bubble.open map, o.listing.marker._marker
   render: (o) ->
-    
+    $('.bubble.square_feet').text o.listing.square_feet
+    $('.bubble.price').text o.listing.price
+    $('.bubble.description').text o.listing.description
+    $('.bubble.built_out').text o.listing.built_out
   remove: (o) ->
     o?._bubble.close()
-Listing = NeckBrace.Type.copy
+Listing = Neckbrace.Type.copy
   name: "Listing"
   element: "n/a"
   initialize: (o) ->
@@ -185,7 +187,6 @@ Listing = NeckBrace.Type.copy
     Bubble.render o.bubble
   change_address: (address) ->
     GoogleMap.get_location address, (loc) ->
-      console.log "loc is", loc
       app.listing.address = address
       app.listing.loc = loc
       app.listing.lat = loc.lat()
@@ -203,7 +204,7 @@ Listing = NeckBrace.Type.copy
 
   
 
-AddSpot = NeckBrace.Type.copy
+AddSpot = Neckbrace.Type.copy
   name : "edit spot"
   element: "div"
   append: (o) ->
@@ -213,10 +214,10 @@ AddSpot = NeckBrace.Type.copy
       <h1 id="add_heading">Add</h1><form class="main-input-toggle" style="display:none;" id="add_form">
       Address
       <input id="address" />
-      <input type="radio" name="built_out" value="built_out"/> built out
+      <input type="radio" name="built_out" value="Built out"/> built out
       <input type="radio" name="built_out" value="shell"> shell
       Square Feet
-      <input type="text" name="square_feet">
+      <input type="text" id="square_feet" name="square_feet">
       <span id="price_per_month">Price/Month</span>
       Price Includes (check all that apply)
       <input type="checkbox" id="all_the_below"> All the below
@@ -242,7 +243,12 @@ AddSpot = NeckBrace.Type.copy
       $('.main-input-toggle').toggle('slow')
     $('#add_form').submit (e) ->
       e.preventDefault()
-
+      app.listing.__type.save app.listing,
+        success: (data) ->
+          console.log "successfully clean"
+        error: (data) ->
+          console.log "error"
+        
       return false
     $('#address').typed callback: () ->
       Listing.change_address $('#address').val()
@@ -250,10 +256,18 @@ AddSpot = NeckBrace.Type.copy
     $('[name="built_out"]').click (e) ->
       app.listing.built_out = $(this).val()
       Listing.render app.listing
-    $('#square_feet, #description').keyup (e) ->
+      
+    $('#square_feet').keyup (e) ->
+      app.listing.square_feet  = $(this).val()
       Listing.render app.listing
 
-App = NeckBrace.Type.copy
+    $('#description').keyup (e) ->
+      app.listing.description = $(this).val()
+      Listing.render app.listing
+
+
+
+App = Neckbrace.Type.copy
   name: "app"
   element: "div"
   initialize: (o) ->
