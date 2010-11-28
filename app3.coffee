@@ -3,6 +3,29 @@ obj = Neckbrace.obj
 arr = Neckbrace.arr
 map = "" #for the google map
 app = "" #for the main app
+
+
+#clobbers = ["is_new", "is_mine", "save", "render", "append", "initialize", "before_save"]
+#for val in clobbers
+# how would I do this? explicit scope!!
+
+is_new = (o) ->
+  o.__type.is_new o
+is_mine = (o) ->
+  console.log o
+  o.__type.is_mine o
+save = (o) ->
+  o.__type.save o
+before_save = (o) ->
+  o.__type.before_save o
+append = (o) ->
+  o.__type.append o
+initialize = (o) ->
+  o.__type.initialize o
+render = (o) ->
+  o.__type.initialize o
+
+
 GoogleMap = Neckbrace.Type.copy
   name: "Google Map"
   element: "div"
@@ -127,7 +150,7 @@ Search = Neckbrace.Type.copy
     $('#search_heading').click (e) ->
       $('.main-input-toggle').toggle('slow')
 
-
+    
     $('#search_form').submit (e) ->
       e.preventDefault()
 
@@ -142,12 +165,19 @@ Marker = Neckbrace.Type.copy
       map: map
       title: "hello world"
       icon: "pin.png"
+    if is_mine(o.listing) and is_new o.listing
+      marker_options.draggable = true
+      marker_options.icon = "apartment.png"
     o._marker = new google.maps.Marker marker_options
-    map.setCenter o.listing.loc
-    map.setZoom 15
+    if is_new o.listing
+      map.setCenter o.listing.loc
+      map.setZoom 15
     #specifically not calling this.super.append o
     google.maps.event.addListener o._marker, "click", () ->
+      for listing in app.listings
+        listing.bubble._bubble.close()
       o.listing.bubble._bubble.open map, o._marker
+
       # now, make it editable if you can
 
   remove: (o) ->
@@ -164,10 +194,18 @@ Bubble = Neckbrace.Type.copy
       <span class="bubble square_feet">#{o.listing.square_feet or ""}</span>
       <span class="bubble built_out">#{o.listing.built_out or ""}</span>
       </pre>
-    """ 
+    """
+    info = $ info
+    if not(is_new o.listing) and is_mine o.listing
+      info.append "<a href='#' id='bubble_edit_#{o.__uid}'>Edit</a>"
     o._bubble = new google.maps.InfoWindow
-      content: info
-    o._bubble.open map, o.listing.marker._marker
+      content: info[0]
+    if is_new o.listing
+      o._bubble.open map, o.listing.marker._marker
+    $('#bubble_edit#{o.__uid}').click (e) ->
+      e.preventDefault()
+      alert "test"
+
   render: (o) ->
     $('.bubble.square_feet').text o.listing.square_feet
     $('.bubble.price').text o.listing.price
@@ -182,28 +220,34 @@ Listing = Neckbrace.Type.copy
   ajax: Severus.ajax
   element: "n/a"
   initialize: (o) ->
-    #do nothing
+    this.super.initialize o
+
   append: (o) ->
     #do noting
+    if o.lat and o.lng
+      o.loc = new google.maps.LatLng o.lat, o.lng
+      Marker.remove o.marker #times like these where i may want app.listing.remove()
+      #and use prototypal inheritance.
+      o.marker = obj
+        __type: Marker
+        listing: o #point back to the listing for reference
+      Bubble.remove o.bubble
+      o.bubble = obj
+        __type: Bubble
+        listing: o
+    
+    
   render: (o) ->
-    Marker.render o.marker
-    Bubble.render o.bubble
+    if o.lat and o.lng
+      Marker.render o.marker
+      Bubble.render o.bubble
   change_address: (address) ->
     GoogleMap.get_location address, (loc) ->
       app.listing.address = address
       app.listing.loc = loc
       app.listing.lat = loc.lat()
       app.listing.lng = loc.lng()
-      Marker.remove app.listing.marker #times like these where i may want app.listing.remove()
-      #and use prototypal inheritance.
-      #app.listing.marker?.remove()
-      app.listing.marker = obj
-        __type: Marker
-        listing: app.listing #point back to the listing for reference
-      Bubble.remove app.listing.bubble
-      app.listing.bubble = obj
-        __type: Bubble
-        listing: app.listing
+      append app.listing
   before_save: (o) ->
     ret = {}
     for key, val of o
@@ -211,6 +255,8 @@ Listing = Neckbrace.Type.copy
         ret[key] = val
     ret._public = true
     return this.super.before_save ret
+  is_mine: (o) ->
+    return app.login.username is o._user
   
   
 
@@ -254,9 +300,8 @@ AddSpot = Neckbrace.Type.copy
     $('#add_form').submit (e) ->
       e.preventDefault()
       
-      app.listing.__type.save app.listing,
+      save app.listing,
         success: (data) ->
-          console.log "successfully clean"
         error: (data) ->
           console.log "error"
         
@@ -289,7 +334,14 @@ App = Neckbrace.Type.copy
         o.login.username = data.username
         Login.render o.login
         
-        that.super.initialize o 
+        Listing.fetch
+          success: (data) ->
+            for listing in data
+              listing.__type = Listing
+              o.listings.push obj listing
+        that.super.initialize o
+
+    
   append: (o) ->
     this.super.append o
     $(document.body).css

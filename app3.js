@@ -1,10 +1,32 @@
 (function() {
-  var AddSpot, App, Bubble, GoogleMap, Listing, Login, Marker, Search, app, arr, map, obj, render, start;
+  var AddSpot, App, Bubble, GoogleMap, Listing, Login, Marker, Search, app, append, arr, before_save, initialize, is_mine, is_new, map, obj, render, save, start;
   var __hasProp = Object.prototype.hasOwnProperty;
   obj = Neckbrace.obj;
   arr = Neckbrace.arr;
   map = "";
   app = "";
+  is_new = function(o) {
+    return o.__type.is_new(o);
+  };
+  is_mine = function(o) {
+    console.log(o);
+    return o.__type.is_mine(o);
+  };
+  save = function(o) {
+    return o.__type.save(o);
+  };
+  before_save = function(o) {
+    return o.__type.before_save(o);
+  };
+  append = function(o) {
+    return o.__type.append(o);
+  };
+  initialize = function(o) {
+    return o.__type.initialize(o);
+  };
+  render = function(o) {
+    return o.__type.initialize(o);
+  };
   GoogleMap = Neckbrace.Type.copy({
     name: "Google Map",
     element: "div",
@@ -121,10 +143,22 @@
         title: "hello world",
         icon: "pin.png"
       };
+      if (is_mine(o.listing) && is_new(o.listing)) {
+        marker_options.draggable = true;
+        marker_options.icon = "apartment.png";
+      }
       o._marker = new google.maps.Marker(marker_options);
-      map.setCenter(o.listing.loc);
-      map.setZoom(15);
+      if (is_new(o.listing)) {
+        map.setCenter(o.listing.loc);
+        map.setZoom(15);
+      }
       return google.maps.event.addListener(o._marker, "click", function() {
+        var _i, _len, _ref, listing;
+        _ref = app.listings;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          listing = _ref[_i];
+          listing.bubble._bubble.close();
+        }
         return o.listing.bubble._bubble.open(map, o._marker);
       });
     },
@@ -137,10 +171,20 @@
     append: function(o) {
       var info;
       info = ("<pre style=\"height: 200px;\">\n<span class=\"bubble location\">" + (o.listing.address || "") + "</span>\n<span class=\"bubble price\">" + (o.listing.price || "") + "</span>\n<span class=\"bubble description\">" + (o.listing.description || "") + "</span>\n<span class=\"bubble square_feet\">" + (o.listing.square_feet || "") + "</span>\n<span class=\"bubble built_out\">" + (o.listing.built_out || "") + "</span>\n</pre>");
+      info = $(info);
+      if (!(is_new(o.listing)) && is_mine(o.listing)) {
+        info.append("<a href='#' id='bubble_edit_" + (o.__uid) + "'>Edit</a>");
+      }
       o._bubble = new google.maps.InfoWindow({
-        content: info
+        content: info[0]
       });
-      return o._bubble.open(map, o.listing.marker._marker);
+      if (is_new(o.listing)) {
+        o._bubble.open(map, o.listing.marker._marker);
+      }
+      return $('#bubble_edit#{o.__uid}').click(function(e) {
+        e.preventDefault();
+        return alert("test");
+      });
     },
     render: function(o) {
       $('.bubble.square_feet').text(o.listing.square_feet);
@@ -157,11 +201,29 @@
     plural: "listings",
     ajax: Severus.ajax,
     element: "n/a",
-    initialize: function(o) {},
-    append: function(o) {},
+    initialize: function(o) {
+      return this["super"].initialize(o);
+    },
+    append: function(o) {
+      if (o.lat && o.lng) {
+        o.loc = new google.maps.LatLng(o.lat, o.lng);
+        Marker.remove(o.marker);
+        o.marker = obj({
+          __type: Marker,
+          listing: o
+        });
+        Bubble.remove(o.bubble);
+        return (o.bubble = obj({
+          __type: Bubble,
+          listing: o
+        }));
+      }
+    },
     render: function(o) {
-      Marker.render(o.marker);
-      return Bubble.render(o.bubble);
+      if (o.lat && o.lng) {
+        Marker.render(o.marker);
+        return Bubble.render(o.bubble);
+      }
     },
     change_address: function(address) {
       return GoogleMap.get_location(address, function(loc) {
@@ -169,16 +231,7 @@
         app.listing.loc = loc;
         app.listing.lat = loc.lat();
         app.listing.lng = loc.lng();
-        Marker.remove(app.listing.marker);
-        app.listing.marker = obj({
-          __type: Marker,
-          listing: app.listing
-        });
-        Bubble.remove(app.listing.bubble);
-        return (app.listing.bubble = obj({
-          __type: Bubble,
-          listing: app.listing
-        }));
+        return append(app.listing);
       });
     },
     before_save: function(o) {
@@ -194,6 +247,9 @@
       }
       ret._public = true;
       return this["super"].before_save(ret);
+    },
+    is_mine: function(o) {
+      return app.login.username === o._user;
     }
   });
   AddSpot = Neckbrace.Type.copy({
@@ -207,10 +263,8 @@
       });
       $('#add_form').submit(function(e) {
         e.preventDefault();
-        app.listing.__type.save(app.listing, {
-          success: function(data) {
-            return console.log("successfully clean");
-          },
+        save(app.listing, {
+          success: function(data) {},
           error: function(data) {
             return console.log("error");
           }
@@ -247,6 +301,20 @@
         success: function(data) {
           o.login.username = data.username;
           Login.render(o.login);
+          Listing.fetch({
+            success: function(data) {
+              var _i, _len, _ref, _result, listing;
+              _result = []; _ref = data;
+              for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+                listing = _ref[_i];
+                _result.push((function() {
+                  listing.__type = Listing;
+                  return o.listings.push(obj(listing));
+                })());
+              }
+              return _result;
+            }
+          });
           return that["super"].initialize(o);
         }
       });
