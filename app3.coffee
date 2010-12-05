@@ -24,6 +24,10 @@ initialize = (o) ->
   o.__type.initialize o
 render = (o) ->
   o.__type.initialize o
+set = (o, vals) ->
+  o.__type.set o, vals
+
+
 
 
 GoogleMap = Neckbrace.Type.copy
@@ -58,6 +62,7 @@ GoogleMap = Neckbrace.Type.copy
 Login = Neckbrace.Type.copy
   name: "login"
   element: "div"
+  set: 
   append: (o) ->
     this.super.append o
     that = this
@@ -128,7 +133,7 @@ Search = Neckbrace.Type.copy
     this.super.append o
     $(o.__el).append """
       <pre>
-      <h1 id="search_heading">Search</h1><form id="search_form" class="main-input-toggle">
+      <h2 id="search_heading">Search</h2><form id="search_form" class="main-input-toggle">
       <select id="search_for_lease">
         <option>For Lease</option>
         <option>For Sale</option>
@@ -267,7 +272,7 @@ AddSpot = Neckbrace.Type.copy
     this.super.append o
     $(o.__el).append """
       <pre>
-      <h1 id="add_heading">Add</h1><form class="main-input-toggle" style="display:none;" id="add_form">
+      <h2 id="add_heading">Add</h2><form class="main-input-toggle" style="display:none;" id="add_form">
       Address
       <input id="address" />
       <input type="radio" name="built_out" value="Built out"/> built out

@@ -1,5 +1,5 @@
 (function() {
-  var AddSpot, App, Bubble, GoogleMap, Listing, Login, Marker, Search, app, append, arr, before_save, initialize, is_mine, is_new, map, obj, render, save, start;
+  var AddSpot, App, Bubble, GoogleMap, Listing, Login, Marker, Search, app, append, arr, before_save, initialize, is_mine, is_new, map, obj, render, save, set, start;
   var __hasProp = Object.prototype.hasOwnProperty;
   obj = Neckbrace.obj;
   arr = Neckbrace.arr;
@@ -26,6 +26,9 @@
   };
   render = function(o) {
     return o.__type.initialize(o);
+  };
+  set = function(o) {
+    return o.__type.set(o);
   };
   GoogleMap = Neckbrace.Type.copy({
     name: "Google Map",
@@ -122,7 +125,7 @@
     name: "Search",
     append: function(o) {
       this["super"].append(o);
-      $(o.__el).append("<pre>\n<h1 id=\"search_heading\">Search</h1><form id=\"search_form\" class=\"main-input-toggle\">\n<select id=\"search_for_lease\">\n  <option>For Lease</option>\n  <option>For Sale</option>\n</select>\n<input type=\"checkbox\" name=\"built_out\" value=\"built_out\"/> built out\n<input type=\"checkbox\" name=\"built_out\" value=\"shell\"> shell\nCity or Zip\n<input type=\"text\" name=\"city\">\nSquare Feet\n<input type=\"text\" name=\"min\" size=\"4\" /><input type=\"text\" name=\"max\" size=\"4\" />\nPrice/Month\n<input type=\"text\" name=\"min\" size=\"4\" /><input type=\"text\" name=\"max\" size=\"4\"/>\nKeywords\n<input type=\"text\" name=\"keywords\">\n<input type=\"submit\" value=\"Search\">\n</form>\n</pre>");
+      $(o.__el).append("<pre>\n<h2 id=\"search_heading\">Search</h2><form id=\"search_form\" class=\"main-input-toggle\">\n<select id=\"search_for_lease\">\n  <option>For Lease</option>\n  <option>For Sale</option>\n</select>\n<input type=\"checkbox\" name=\"built_out\" value=\"built_out\"/> built out\n<input type=\"checkbox\" name=\"built_out\" value=\"shell\"> shell\nCity or Zip\n<input type=\"text\" name=\"city\">\nSquare Feet\n<input type=\"text\" name=\"min\" size=\"4\" /><input type=\"text\" name=\"max\" size=\"4\" />\nPrice/Month\n<input type=\"text\" name=\"min\" size=\"4\" /><input type=\"text\" name=\"max\" size=\"4\"/>\nKeywords\n<input type=\"text\" name=\"keywords\">\n<input type=\"submit\" value=\"Search\">\n</form>\n</pre>");
       $('#search_heading').click(function(e) {
         return $('.main-input-toggle').toggle('slow');
       });
@@ -257,7 +260,7 @@
     element: "div",
     append: function(o) {
       this["super"].append(o);
-      $(o.__el).append("<pre>\n<h1 id=\"add_heading\">Add</h1><form class=\"main-input-toggle\" style=\"display:none;\" id=\"add_form\">\nAddress\n<input id=\"address\" />\n<input type=\"radio\" name=\"built_out\" value=\"Built out\"/> built out\n<input type=\"radio\" name=\"built_out\" value=\"shell\"> shell\nSquare Feet\n<input type=\"text\" id=\"square_feet\" name=\"square_feet\">\n<span id=\"price_per_month\">Price/Month</span>\nPrice Includes (check all that apply)\n<input type=\"checkbox\" id=\"all_the_below\"> All the below\n<input type=\"checkbox\" id=\"property_taxes\"> Property Taxes\n<input type=\"checkbox\" id=\"all_the_below\"> Renal Tax\n<input type=\"checkbox\" id=\"all_the_below\"> Insurance building and TI insurance\n<input type=\"checkbox\" id=\"all_the_below\"> CAM Fees\n<input type=\"checkbox\" id=\"all_the_below\"> Electricity\n<input type=\"checkbox\" id=\"all_the_below\"> Water\n<input type=\"checkbox\" id=\"all_the_below\"> Janitorial\n<input type=\"checkbox\" id=\"all_the_below\"> Internet\n<input type=\"checkbox\" id=\"all_the_below\"> Phone Line\n<input type=\"checkbox\" id=\"all_the_below\"> Alarm Sytem Monitoring\nDescription\n<textarea id=\"description\"></textarea>\nYoutube Video (link or embed code)\n<input type=\"text\" id=\"youtube\" />\n<input type=\"submit\" value=\"Add\" id=\"add_submit\">\n</form>\n</pre>");
+      $(o.__el).append("<pre>\n<h2 id=\"add_heading\">Add</h2><form class=\"main-input-toggle\" style=\"display:none;\" id=\"add_form\">\nAddress\n<input id=\"address\" />\n<input type=\"radio\" name=\"built_out\" value=\"Built out\"/> built out\n<input type=\"radio\" name=\"built_out\" value=\"shell\"> shell\nSquare Feet\n<input type=\"text\" id=\"square_feet\" name=\"square_feet\">\n<span id=\"price_per_month\">Price/Month</span>\nPrice Includes (check all that apply)\n<input type=\"checkbox\" id=\"all_the_below\"> All the below\n<input type=\"checkbox\" id=\"property_taxes\"> Property Taxes\n<input type=\"checkbox\" id=\"all_the_below\"> Renal Tax\n<input type=\"checkbox\" id=\"all_the_below\"> Insurance building and TI insurance\n<input type=\"checkbox\" id=\"all_the_below\"> CAM Fees\n<input type=\"checkbox\" id=\"all_the_below\"> Electricity\n<input type=\"checkbox\" id=\"all_the_below\"> Water\n<input type=\"checkbox\" id=\"all_the_below\"> Janitorial\n<input type=\"checkbox\" id=\"all_the_below\"> Internet\n<input type=\"checkbox\" id=\"all_the_below\"> Phone Line\n<input type=\"checkbox\" id=\"all_the_below\"> Alarm Sytem Monitoring\nDescription\n<textarea id=\"description\"></textarea>\nYoutube Video (link or embed code)\n<input type=\"text\" id=\"youtube\" />\n<input type=\"submit\" value=\"Add\" id=\"add_submit\">\n</form>\n</pre>");
       $('#add_heading').click(function(e) {
         return $('.main-input-toggle').toggle('slow');
       });
