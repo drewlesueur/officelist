@@ -5,17 +5,23 @@ map = "" #for the google map
 app = "" #for the main app
 
 
-#clobbers = ["is_new", "is_mine", "save", "render", "append", "initialize", "before_save"]
+clobbers = ["is_new", "is_mine", "save", "render", "append", "initialize", "before_save",
+"set", "add", "getById", "getByUid"]
+
+N = {}
+for val in clobbers
+  N[val] = (o, args...) ->
+    o.__type[val] o, args...
+
 #for val in clobbers
 # how would I do this? explicit scope!!
 
 is_new = (o) ->
   o.__type.is_new o
 is_mine = (o) ->
-  console.log o
   o.__type.is_mine o
-save = (o) ->
-  o.__type.save o
+save = (o, options) ->
+  o.__type.save o, options
 before_save = (o) ->
   o.__type.before_save o
 append = (o) ->
@@ -26,8 +32,6 @@ render = (o) ->
   o.__type.initialize o
 set = (o, vals) ->
   o.__type.set o, vals
-
-
 
 
 GoogleMap = Neckbrace.Type.copy
@@ -55,14 +59,15 @@ GoogleMap = Neckbrace.Type.copy
       if status is google.maps.GeocoderStatus.OK
         callback(results[0].geometry.location)
       else
-        console.log "there was a problem looking up #{wherethe}"
+        
+        console["log"] "there was a problem looking up #{wherethe}"
 
 
 
 Login = Neckbrace.Type.copy
   name: "login"
   element: "div"
-  set: 
+  #set: 
   append: (o) ->
     this.super.append o
     that = this
@@ -104,6 +109,10 @@ Login = Neckbrace.Type.copy
         password: $("#question").val() + ":" + $("#password").val()
       Severus.login creds, (data) ->
         if data.result is true
+          location.href = app.url
+          return
+          #todo: Later do this severus.ajax and then dynamically
+          #update listings so you can edit them
           Severus.ajax
             url: "/me"
             success : (data) ->
@@ -190,6 +199,17 @@ Marker = Neckbrace.Type.copy
   
 Bubble = Neckbrace.Type.copy
   name: "bubble"
+
+  global_watcher: (o) ->
+    #this method puts a handler on the document.body
+    #to handle clicks
+    $(document.body).click (e) ->
+      
+      #edit a listing
+      if $(e.target).is ".bubble_edit"
+        id = $(e.target).attr "data-id"
+        new_listing = N.getById app.listings, id
+        set app, "listing": new_listing #consider app.set "listing": app.listings.getById id
   append: (o) ->
     info = """
       <pre style="height: 200px;">
@@ -202,7 +222,8 @@ Bubble = Neckbrace.Type.copy
     """
     info = $ info
     if not(is_new o.listing) and is_mine o.listing
-      info.append "<a href='#' id='bubble_edit_#{o.__uid}'>Edit</a>"
+      info.append "<a href='#' id='bubble_edit_#{o.__uid}' data-id='#{o.listing._id}' 
+        class='bubble_edit'>Edit</a>"
     o._bubble = new google.maps.InfoWindow
       content: info[0]
     if is_new o.listing
@@ -218,8 +239,10 @@ Bubble = Neckbrace.Type.copy
     $('.bubble.built_out').text o.listing.built_out
   remove: (o) ->
     o?._bubble.close()
+
+Listings = Neckbrace.Type.copy()
+
 Listing = Neckbrace.Type.copy
-  
   name: "listing"
   plural: "listings"
   ajax: Severus.ajax
@@ -273,6 +296,10 @@ AddSpot = Neckbrace.Type.copy
     $(o.__el).append """
       <pre>
       <h2 id="add_heading">Add</h2><form class="main-input-toggle" style="display:none;" id="add_form">
+      <select id="add_for_lease">
+        <option>For Lease</option>
+        <option>For Sale</option>
+      </select>
       Address
       <input id="address" />
       <input type="radio" name="built_out" value="Built out"/> built out
@@ -302,18 +329,30 @@ AddSpot = Neckbrace.Type.copy
     """
     $('#add_heading').click (e) ->
       $('.main-input-toggle').toggle('slow')
+    
+    #add a listing
+    # as you type, the listing object gets updated.
+    # this is just one way to do it.
+    # you could go thru the form and save the form values at the end
+    # but not this time around.
     $('#add_form').submit (e) ->
       e.preventDefault()
-      
       save app.listing,
         success: (data) ->
         error: (data) ->
-          console.log "error"
+          console["log"] "error"
         
       return false
+    
     $('#address').typed callback: () ->
       Listing.change_address $('#address').val()
-    
+   
+    $('#add_for_lease').change (e) ->
+      app.listing.for_lease = $(this).val()
+
+    #$('#add_for_lease').click (e) ->
+    #  c#onsole.log $(this).val()
+
     $('[name="built_out"]').click (e) ->
       app.listing.built_out = $(this).val()
       Listing.render app.listing
@@ -325,14 +364,18 @@ AddSpot = Neckbrace.Type.copy
     $('#description').keyup (e) ->
       app.listing.description = $(this).val()
       Listing.render app.listing
-
-
+  render: (o) ->
+    if not $('#add_heading').next().is(":visible")
+      $('#add_heading').click()
 
 App = Neckbrace.Type.copy
   name: "app"
   element: "div"
   initialize: (o) ->
     that = this
+    
+    Bubble.global_watcher() #sets up the bubble edit click code, etc
+     
     Severus.ajax
       url: "/me"
       success: (data) ->
@@ -343,9 +386,9 @@ App = Neckbrace.Type.copy
           success: (data) ->
             for listing in data
               listing.__type = Listing
-              o.listings.push obj listing
+              N.add o.listings, obj listing #consider o.listings.add obj listing
         that.super.initialize o
-
+        $('#add_heading').click() #make the add heading come up first
     
   append: (o) ->
     this.super.append o
@@ -358,11 +401,15 @@ App = Neckbrace.Type.copy
     $(o.__el).attr("id", "officelist-app").append """
         
     """
-  render = (o) ->
-    this.render_login o
-    
+  render: (o) ->
+    #this.render_login o
+  set: (o, vals) ->
+    this.super.set o, vals
+    if "listing" of vals
+      AddSpot.render()
 start = () ->
   app = window.app = obj
+    url: "http://officelist.the.tl"
     login: obj
       username: ""
       __type: Login
@@ -376,9 +423,8 @@ start = () ->
     __type: App
     listing: obj
       __type: Listing
-    listings: []
+    listings: arr([], __type: Listings)
     
    
 $(document).ready () ->
   Severus.initialize "http://severus.the.tl/severus.html", start
-
